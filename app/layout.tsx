@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./font-faces.css";
 import { SiteNav } from "@/components/SiteNav";
 import { families, licenseTypes } from "@/lib/catalog";
 import { pairings } from "@/lib/pairings";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -29,8 +42,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" data-theme="dark" suppressHydrationWarning>
-      <body className="flex min-h-dvh flex-col">
+    <html
+      lang="vi"
+      data-theme="dark"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="flex min-h-dvh flex-col font-sans">
         <script
           dangerouslySetInnerHTML={{
             __html: `try{if(localStorage.getItem("fontvh-theme")==="light"){document.documentElement.dataset.theme="light"}}catch(e){}`,

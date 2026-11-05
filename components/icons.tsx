@@ -16,6 +16,8 @@ export function Magnifier({ className = "" }: { className?: string }) {
   );
 }
 
+export const SearchIcon = Magnifier;
+
 export function ListIcon({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -55,6 +57,41 @@ export function GridIcon({ className = "" }: { className?: string }) {
   );
 }
 
+export function SunIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`h-4 w-4 shrink-0 ${className}`}
+    >
+      <circle cx="8" cy="8" r="3" />
+      <path d="M8 1.5v1.5M8 13v1.5M1.5 8h1.5M13 8h1.5M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1" />
+    </svg>
+  );
+}
+
+export function MoonIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`h-4 w-4 shrink-0 ${className}`}
+    >
+      <path d="M13.5 9.8A6 6 0 1 1 6.2 2.5a5 5 0 0 0 7.3 7.3z" />
+    </svg>
+  );
+}
+
 export function DownloadIcon({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -67,8 +104,7 @@ export function DownloadIcon({ className = "" }: { className?: string }) {
       aria-hidden="true"
       className={`h-4 w-4 shrink-0 ${className}`}
     >
-      <path d="M8 2v9m0 0-3-3m3 3 3-3" />
-      <path d="M3 14h10" />
+      <path d="M8 2.5v7.5m0 0-3-3m3 3 3-3M2.5 13.5h11" />
     </svg>
   );
 }
@@ -85,8 +121,8 @@ export function CopyIcon({ className = "" }: { className?: string }) {
       aria-hidden="true"
       className={`h-4 w-4 shrink-0 ${className}`}
     >
-      <rect x="5" y="5" width="8" height="8" rx="1" />
-      <path d="M3 11V3h8" />
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1" />
+      <path d="M4 10.5H3.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V4" />
     </svg>
   );
 }
@@ -97,13 +133,13 @@ export function CheckIcon({ className = "" }: { className?: string }) {
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.75"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       className={`h-4 w-4 shrink-0 ${className}`}
     >
-      <path d="m3 8.5 3.5 3.5 6.5-7" />
+      <path d="m3 8.5 3.5 3.5 6.5-7.5" />
     </svg>
   );
 }

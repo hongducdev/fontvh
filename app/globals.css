@@ -23,6 +23,22 @@
   --tab-active-muted: #606055;
   --selection-bg: #ffffe3;
   --selection-ink: #10100e;
+
+  /* Syntax Highlighting */
+  --code-bg: #141411;
+  --code-header: #191815;
+  --code-border: #30302b;
+  --code-line-num: #5c5c50;
+  --code-comment: #8a8a78;
+  --code-string: #7ee787;
+  --code-keyword: #ff7b72;
+  --code-property: #79c0ff;
+  --code-value: #ffa657;
+  --code-function: #d2a8ff;
+  --code-number: #f2cc60;
+  --code-tag: #ff7b72;
+  --code-attr: #79c0ff;
+  --code-punct: #c0c0ab;
 }
 
 :root[data-theme="light"] {
@@ -46,6 +62,22 @@
   --tab-active-muted: #888888;
   --selection-bg: #101010;
   --selection-ink: #ffffff;
+
+  /* Syntax Highlighting */
+  --code-bg: #f8f8f7;
+  --code-header: #f0f0ee;
+  --code-border: #e2e2dd;
+  --code-line-num: #9e9e90;
+  --code-comment: #6a737d;
+  --code-string: #1a7f37;
+  --code-keyword: #cf222e;
+  --code-property: #0550ae;
+  --code-value: #953800;
+  --code-function: #8250df;
+  --code-number: #b05a00;
+  --code-tag: #cf222e;
+  --code-attr: #0550ae;
+  --code-punct: #57606a;
 }
 
 @theme inline {
@@ -62,9 +94,24 @@
   --color-row-hover: var(--row-hover);
   --color-cream: #ffffe3;
 
-  --font-sans: "be-vietnam-pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+  --color-code-bg: var(--code-bg);
+  --color-code-header: var(--code-header);
+  --color-code-border: var(--code-border);
+  --color-code-line-num: var(--code-line-num);
+  --color-code-comment: var(--code-comment);
+  --color-code-string: var(--code-string);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-property: var(--code-property);
+  --color-code-value: var(--code-value);
+  --color-code-function: var(--code-function);
+  --color-code-number: var(--code-number);
+  --color-code-tag: var(--code-tag);
+  --color-code-attr: var(--code-attr);
+  --color-code-punct: var(--code-punct);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Fontshare type scale: rem at a 16px root */
   --text-xs: 0.75rem;

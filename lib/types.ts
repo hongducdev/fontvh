@@ -22,6 +22,15 @@ export type FontLicense = {
   url?: string;
 };
 
+export type FontMetrics = {
+  unitsPerEm: number;
+  ascent: number;
+  descent: number;
+  capHeight: number;
+  xHeight: number;
+  lineGap?: number;
+};
+
 export type FontFamily = {
   slug: string;
   name: string;
@@ -32,6 +41,7 @@ export type FontFamily = {
   license: FontLicense;
   styles: FontStyle[];
   axes: FontAxis[];
+  metrics: FontMetrics;
   languages: string[];
   vietnamese: boolean;
   dong: boolean;

@@ -127,6 +127,7 @@ async function buildFamily(dir) {
   let dong = false;
   let glyphs = 0;
   let size = 0;
+  let metrics = null;
 
   for (const file of entries) {
     const font = openFont(file);
@@ -137,6 +138,18 @@ async function buildFamily(dir) {
     size += buffer.byteLength;
     glyphs = Math.max(glyphs, font.numGlyphs);
     displayName = meta.name || familyNameOf(font, displayName);
+
+    if (!metrics && font) {
+      const upm = Number(font.unitsPerEm) || 1000;
+      metrics = {
+        unitsPerEm: upm,
+        ascent: Number(font.ascent) || upm,
+        descent: Number(font.descent) || -200,
+        capHeight: Number(font.capHeight) || Math.round(upm * 0.7),
+        xHeight: Number(font.xHeight) || Math.round(upm * 0.5),
+        lineGap: Number(font.lineGap) || 0,
+      };
+    }
 
     const cov = coverage(font);
     vietnamese = vietnamese || cov.vietnamese;
@@ -236,6 +249,14 @@ async function buildFamily(dir) {
     },
     styles,
     axes,
+    metrics: metrics || {
+      unitsPerEm: 1000,
+      ascent: 1000,
+      descent: -200,
+      capHeight: 700,
+      xHeight: 500,
+      lineGap: 0,
+    },
     languages: [vietnamese ? "vi" : null, latin ? "latin" : null].filter(Boolean),
     vietnamese,
     dong,
