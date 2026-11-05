@@ -1,0 +1,9 @@
+{
+  "name": "Playfair Display",
+  "designer": "Claus Eggers Sørensen",
+  "foundry": "Claus Eggers Sørensen",
+  "description": "Serif tương phản cao cho tiêu đề lớn; bản variable hỗ trợ trục độ đậm 400–900.",
+  "categories": ["serif", "display"],
+  "license": "ofl",
+  "releasedAt": "2011-11-16"
+}
