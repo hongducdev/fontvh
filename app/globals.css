@@ -1,0 +1,315 @@
+@import "tailwindcss";
+
+/* Fontshare palette — dark yellow theme is the default, light is opt-in. */
+:root,
+:root[data-theme="dark"] {
+  --paper: #10100e;
+  --ink: #ffffe3;
+  --muted: #c0c0ab;
+  --faint: #606055;
+  --line: #30302b;
+  --soft: #191815;
+  --panel: #10100e;
+  --panel-ink: #ffffe3;
+  --panel-muted: #c0c0ab;
+  --panel-line: #30302b;
+  --row-hover: #191815;
+  --solid-bg: #ffffe3;
+  --solid-ink: #10100e;
+  --solid-hover-bg: #ffffff;
+  --solid-hover-ink: #10100e;
+  --tab-active-bg: #ffffe3;
+  --tab-active-ink: #10100e;
+  --tab-active-muted: #606055;
+  --selection-bg: #ffffe3;
+  --selection-ink: #10100e;
+}
+
+:root[data-theme="light"] {
+  --paper: #ffffff;
+  --ink: #101010;
+  --muted: #666666;
+  --faint: #cccccc;
+  --line: #e5e5e5;
+  --soft: #f6f6f6;
+  --panel: #ffffff;
+  --panel-ink: #101010;
+  --panel-muted: #666666;
+  --panel-line: #e5e5e5;
+  --row-hover: #f5f5f5;
+  --solid-bg: #101010;
+  --solid-ink: #ffffff;
+  --solid-hover-bg: #222222;
+  --solid-hover-ink: #ffffff;
+  --tab-active-bg: #101010;
+  --tab-active-ink: #ffffff;
+  --tab-active-muted: #888888;
+  --selection-bg: #101010;
+  --selection-ink: #ffffff;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-panel: var(--panel);
+  --color-panel-ink: var(--panel-ink);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-line: var(--panel-line);
+  --color-row-hover: var(--row-hover);
+  --color-cream: #ffffe3;
+
+  --font-sans: "be-vietnam-pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Fontshare type scale: rem at a 16px root */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.5rem;
+  --text-lg--line-height: 1.8125rem;
+  --text-xl: 2rem;
+  --text-xl--line-height: 2.625rem;
+  --text-2xl: 3rem;
+  --text-2xl--line-height: 3.25rem;
+  --text-3xl: 4rem;
+  --text-3xl--line-height: 4.25rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background: var(--paper);
+    color-scheme: dark;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-ink);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    filter: grayscale(1);
+  }
+}
+
+@layer components {
+  .shell {
+    width: 100%;
+    max-width: 2000px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .shell {
+      padding-inline: 40px;
+    }
+  }
+
+  /* 12px meta label, the base voice of the Fontshare UI */
+  .micro {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .nav-tab {
+    position: relative;
+    display: grid;
+    place-items: center;
+    border-right: 1px solid var(--line);
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5rem;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .nav-tab:hover {
+    background: var(--soft);
+  }
+
+  .nav-tab[data-active="true"] {
+    background: var(--tab-active-bg);
+    color: var(--tab-active-ink);
+  }
+
+  .nav-count {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .nav-tab[data-active="true"] .nav-count {
+    color: var(--tab-active-muted);
+  }
+
+  .btn,
+  .btn-solid {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid currentColor;
+    padding: 12px 20px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+    transition: background-color 150ms ease, color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .btn:hover {
+    background: var(--soft);
+  }
+
+  .btn-solid {
+    border-color: var(--solid-bg);
+    background: var(--solid-bg);
+    color: var(--solid-ink);
+  }
+
+  .btn-solid:hover {
+    border-color: var(--solid-hover-bg);
+    background: var(--solid-hover-bg);
+    color: var(--solid-hover-ink);
+  }
+
+  .link-underline {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    transition: color 150ms ease;
+  }
+
+  .link-underline:hover {
+    color: var(--muted);
+  }
+
+  .field {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    padding: 8px 0;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+
+  .field::placeholder {
+    color: var(--muted);
+  }
+
+  .field:focus {
+    border-bottom-color: var(--ink);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-bottom: 1px solid transparent;
+    padding: 4px 0;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+
+  .chip:hover {
+    color: var(--ink);
+    border-bottom-color: var(--line);
+  }
+
+  .chip[data-active="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* 1px hairline slider, round ink thumb */
+  .range {
+    width: 100%;
+    height: 16px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .range::-webkit-slider-runnable-track {
+    height: 1px;
+    background: var(--faint);
+  }
+
+  .range::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 11px;
+    height: 11px;
+    margin-top: -5px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--ink);
+  }
+
+  .range::-moz-range-track {
+    height: 1px;
+    background: var(--faint);
+  }
+
+  .range::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--ink);
+  }
+
+  .range:focus-visible {
+    outline-offset: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
