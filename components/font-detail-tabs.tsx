@@ -2,15 +2,42 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { FontFamily } from "@/lib/types";
 import { DownloadIcon } from "./icons";
 import { SpecimenTester } from "./specimen-tester";
 import { StylesGallery } from "./styles-gallery";
-import { FontFeaturesInspector } from "./font-features-inspector";
-import { GlyphInspector } from "./glyph-inspector";
-import { DiacriticsInspector } from "./diacritics-inspector";
-import { FontPairsInspector } from "./font-pairs-inspector";
 import { EmbedCode } from "./embed-code";
+
+// Vercel Best Practice: bundle-dynamic-imports
+// Code-split heavy interactive sub-inspectors (OpenType, 134-glyph diacritics matrix, SVG metrics diagram, font pairing tester)
+// so the initial bundle for font detail pages loads instantly.
+const TabLoadingSkeleton = () => (
+  <div className="shell mt-16 py-16 flex flex-col items-center justify-center border border-dashed border-line/60 rounded-lg">
+    <div className="h-6 w-48 rounded bg-panel animate-pulse mb-3" />
+    <div className="h-4 w-64 rounded bg-panel animate-pulse" />
+  </div>
+);
+
+const FontFeaturesInspector = dynamic(
+  () => import("./font-features-inspector").then((m) => m.FontFeaturesInspector),
+  { loading: TabLoadingSkeleton }
+);
+
+const GlyphInspector = dynamic(
+  () => import("./glyph-inspector").then((m) => m.GlyphInspector),
+  { loading: TabLoadingSkeleton }
+);
+
+const DiacriticsInspector = dynamic(
+  () => import("./diacritics-inspector").then((m) => m.DiacriticsInspector),
+  { loading: TabLoadingSkeleton }
+);
+
+const FontPairsInspector = dynamic(
+  () => import("./font-pairs-inspector").then((m) => m.FontPairsInspector),
+  { loading: TabLoadingSkeleton }
+);
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;

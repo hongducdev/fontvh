@@ -4,8 +4,13 @@ import type { Catalog, FontFamily } from "./types";
 export const catalog = raw as unknown as Catalog;
 export const families: FontFamily[] = catalog.families;
 
+// Fast O(1) index map for family lookup (Vercel Best Practice: js-index-maps)
+const familyMap = new Map<string, FontFamily>(
+  families.map((family) => [family.slug, family])
+);
+
 export function getFamily(slug: string): FontFamily | undefined {
-  return families.find((family) => family.slug === slug);
+  return familyMap.get(slug);
 }
 
 export const categories = Array.from(

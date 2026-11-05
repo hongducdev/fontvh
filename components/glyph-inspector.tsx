@@ -47,6 +47,88 @@ const PUNCTUATION_AND_SYMBOLS = [
   "©", "®", "™", "°", "«", "»", "“", "”", "‘", "’", "–", "—", "…", "•",
 ];
 
+// Vercel Best Practice: js-hoist-regexp & js-index-maps
+// Hoist static Vietnamese diacritic and symbol names out of function scope to avoid allocations on every lookup
+const VI_GLYPH_NAMES: Record<string, string> = {
+  À: "Chữ À hoa (dấu huyền)",
+  Á: "Chữ Á hoa (dấu sắc)",
+  Ả: "Chữ Ả hoa (dấu hỏi)",
+  Ã: "Chữ Ã hoa (dấu ngã)",
+  Ạ: "Chữ Ạ hoa (dấu nặng)",
+  Ă: "Chữ Ă hoa (a nón trăng)",
+  Ằ: "Chữ Ằ hoa (a trăng huyền)",
+  Ắ: "Chữ Ắ hoa (a trăng sắc)",
+  Ẳ: "Chữ Ẳ hoa (a trăng hỏi)",
+  Ẵ: "Chữ Ẵ hoa (a trăng ngã)",
+  Ặ: "Chữ Ặ hoa (a trăng nặng)",
+  Â: "Chữ Â hoa (a nón chóp)",
+  Ầ: "Chữ Ầ hoa (a nón huyền)",
+  Ấ: "Chữ Ấ hoa (a nón sắc)",
+  Ẩ: "Chữ Ẩ hoa (a nón hỏi)",
+  Ẫ: "Chữ Ẫ hoa (a nón ngã)",
+  Ậ: "Chữ Ậ hoa (a nón nặng)",
+  È: "Chữ È hoa (dấu huyền)",
+  É: "Chữ É hoa (dấu sắc)",
+  Ẻ: "Chữ Ẻ hoa (dấu hỏi)",
+  Ẽ: "Chữ Ẽ hoa (dấu ngã)",
+  Ẹ: "Chữ Ẹ hoa (dấu nặng)",
+  Ê: "Chữ Ê hoa (e nón chóp)",
+  Ề: "Chữ Ề hoa (e nón huyền)",
+  Ế: "Chữ Ế hoa (e nón sắc)",
+  Ể: "Chữ Ể hoa (e nón hỏi)",
+  Ễ: "Chữ Ễ hoa (e nón ngã)",
+  Ệ: "Chữ Ệ hoa (e nón nặng)",
+  Ì: "Chữ Ì hoa (dấu huyền)",
+  Í: "Chữ Í hoa (dấu sắc)",
+  Ỉ: "Chữ Ỉ hoa (dấu hỏi)",
+  Ĩ: "Chữ Ĩ hoa (dấu ngã)",
+  Ị: "Chữ Ị hoa (dấu nặng)",
+  Ò: "Chữ Ò hoa (dấu huyền)",
+  Ó: "Chữ Ó hoa (dấu sắc)",
+  Ỏ: "Chữ Ỏ hoa (dấu hỏi)",
+  Õ: "Chữ Õ hoa (dấu ngã)",
+  Ọ: "Chữ Ọ hoa (dấu nặng)",
+  Ô: "Chữ Ô hoa (o nón chóp)",
+  Ồ: "Chữ Ồ hoa (o nón huyền)",
+  Ố: "Chữ Ố hoa (o nón sắc)",
+  Ổ: "Chữ Ổ hoa (o nón hỏi)",
+  Ỗ: "Chữ Ỗ hoa (o nón ngã)",
+  Ộ: "Chữ Ộ hoa (o nón nặng)",
+  Ơ: "Chữ Ơ hoa (o có râu)",
+  Ờ: "Chữ Ờ hoa (o râu huyền)",
+  Ớ: "Chữ Ớ hoa (o râu sắc)",
+  Ở: "Chữ Ở hoa (o râu hỏi)",
+  Ỡ: "Chữ Ỡ hoa (o râu ngã)",
+  Ợ: "Chữ Ợ hoa (o râu nặng)",
+  Ù: "Chữ Ù hoa (dấu huyền)",
+  Ú: "Chữ Ú hoa (dấu sắc)",
+  Ủ: "Chữ Ủ hoa (dấu hỏi)",
+  Ũ: "Chữ Ũ hoa (dấu ngã)",
+  Ụ: "Chữ Ụ hoa (dấu nặng)",
+  Ư: "Chữ Ư hoa (u có râu)",
+  Ừ: "Chữ Ừ hoa (u râu huyền)",
+  Ứ: "Chữ Ứ hoa (u râu sắc)",
+  Ử: "Chữ Ử hoa (u râu hỏi)",
+  Ữ: "Chữ Ữ hoa (u râu ngã)",
+  Ự: "Chữ Ự hoa (u râu nặng)",
+  Ỳ: "Chữ Ỳ hoa (dấu huyền)",
+  Ý: "Chữ Ý hoa (dấu sắc)",
+  Ỷ: "Chữ Ỷ hoa (dấu hỏi)",
+  Ỹ: "Chữ Ỹ hoa (dấu ngã)",
+  Ỵ: "Chữ Ỵ hoa (dấu nặng)",
+};
+
+const SYMBOL_GLYPH_NAMES: Record<string, string> = {
+  "©": "Ký hiệu Bản quyền (Copyright)",
+  "®": "Ký hiệu Nhãn hiệu đã đăng ký (Registered Trademark)",
+  "™": "Ký hiệu Nhãn hiệu (Trademark)",
+  "°": "Ký hiệu Độ (Degree)",
+  "—": "Dấu gạch ngang dài (Em Dash)",
+  "–": "Dấu gạch nối vừa (En Dash)",
+  "…": "Dấu ba chấm lửng (Ellipsis)",
+  "•": "Dấu chấm đầu dòng (Bullet)",
+};
+
 // Helper to get descriptive character name (Song ngữ Việt - Anh)
 function getGlyphName(char: string): string {
   const code = char.codePointAt(0) ?? 0;
@@ -59,95 +141,30 @@ function getGlyphName(char: string): string {
   if (char === "Đ") return `Chữ Đ hoa có gạch · Latin Capital Letter D with Stroke (${hex})`;
   if (char === "đ") return `Chữ đ thường có gạch · Latin Small Letter D with Stroke (${hex})`;
 
-  const viNames: Record<string, string> = {
-    À: "Chữ À hoa (dấu huyền)",
-    Á: "Chữ Á hoa (dấu sắc)",
-    Ả: "Chữ Ả hoa (dấu hỏi)",
-    Ã: "Chữ Ã hoa (dấu ngã)",
-    Ạ: "Chữ Ạ hoa (dấu nặng)",
-    Ă: "Chữ Ă hoa (a nón trăng)",
-    Ằ: "Chữ Ằ hoa (a trăng huyền)",
-    Ắ: "Chữ Ắ hoa (a trăng sắc)",
-    Ẳ: "Chữ Ẳ hoa (a trăng hỏi)",
-    Ẵ: "Chữ Ẵ hoa (a trăng ngã)",
-    Ặ: "Chữ Ặ hoa (a trăng nặng)",
-    Â: "Chữ Â hoa (a nón chóp)",
-    Ầ: "Chữ Ầ hoa (a nón huyền)",
-    Ấ: "Chữ Ấ hoa (a nón sắc)",
-    Ẩ: "Chữ Ẩ hoa (a nón hỏi)",
-    Ẫ: "Chữ Ẫ hoa (a nón ngã)",
-    Ậ: "Chữ Ậ hoa (a nón nặng)",
-    È: "Chữ È hoa (dấu huyền)",
-    É: "Chữ É hoa (dấu sắc)",
-    Ẻ: "Chữ Ẻ hoa (dấu hỏi)",
-    Ẽ: "Chữ Ẽ hoa (dấu ngã)",
-    Ẹ: "Chữ Ẹ hoa (dấu nặng)",
-    Ê: "Chữ Ê hoa (e nón chóp)",
-    Ề: "Chữ Ề hoa (e nón huyền)",
-    Ế: "Chữ Ế hoa (e nón sắc)",
-    Ể: "Chữ Ể hoa (e nón hỏi)",
-    Ễ: "Chữ Ễ hoa (e nón ngã)",
-    Ệ: "Chữ Ệ hoa (e nón nặng)",
-    Ì: "Chữ Ì hoa (dấu huyền)",
-    Í: "Chữ Í hoa (dấu sắc)",
-    Ỉ: "Chữ Ỉ hoa (dấu hỏi)",
-    Ĩ: "Chữ Ĩ hoa (dấu ngã)",
-    Ị: "Chữ Ị hoa (dấu nặng)",
-    Ò: "Chữ Ò hoa (dấu huyền)",
-    Ó: "Chữ Ó hoa (dấu sắc)",
-    Ỏ: "Chữ Ỏ hoa (dấu hỏi)",
-    Õ: "Chữ Õ hoa (dấu ngã)",
-    Ọ: "Chữ Ọ hoa (dấu nặng)",
-    Ô: "Chữ Ô hoa (o nón chóp)",
-    Ồ: "Chữ Ồ hoa (o nón huyền)",
-    Ố: "Chữ Ố hoa (o nón sắc)",
-    Ổ: "Chữ Ổ hoa (o nón hỏi)",
-    Ỗ: "Chữ Ỗ hoa (o nón ngã)",
-    Ộ: "Chữ Ộ hoa (o nón nặng)",
-    Ơ: "Chữ Ơ hoa (o có râu)",
-    Ờ: "Chữ Ờ hoa (o râu huyền)",
-    Ớ: "Chữ Ớ hoa (o râu sắc)",
-    Ở: "Chữ Ở hoa (o râu hỏi)",
-    Ỡ: "Chữ Ỡ hoa (o râu ngã)",
-    Ợ: "Chữ Ợ hoa (o râu nặng)",
-    Ù: "Chữ Ù hoa (dấu huyền)",
-    Ú: "Chữ Ú hoa (dấu sắc)",
-    Ủ: "Chữ Ủ hoa (dấu hỏi)",
-    Ũ: "Chữ Ũ hoa (dấu ngã)",
-    Ụ: "Chữ Ụ hoa (dấu nặng)",
-    Ư: "Chữ Ư hoa (u có râu)",
-    Ừ: "Chữ Ừ hoa (u râu huyền)",
-    Ứ: "Chữ Ứ hoa (u râu sắc)",
-    Ử: "Chữ Ử hoa (u râu hỏi)",
-    Ữ: "Chữ Ữ hoa (u râu ngã)",
-    Ự: "Chữ Ự hoa (u râu nặng)",
-    Ỳ: "Chữ Ỳ hoa (dấu huyền)",
-    Ý: "Chữ Ý hoa (dấu sắc)",
-    Ỷ: "Chữ Ỷ hoa (dấu hỏi)",
-    Ỹ: "Chữ Ỹ hoa (dấu ngã)",
-    Ỵ: "Chữ Ỵ hoa (dấu nặng)",
-  };
-
-  const symbolNames: Record<string, string> = {
-    "©": "Ký hiệu Bản quyền (Copyright)",
-    "®": "Ký hiệu Nhãn hiệu đã đăng ký (Registered Trademark)",
-    "™": "Ký hiệu Nhãn hiệu (Trademark)",
-    "°": "Ký hiệu Độ (Degree)",
-    "—": "Dấu gạch ngang dài (Em Dash)",
-    "–": "Dấu gạch nối vừa (En Dash)",
-    "…": "Dấu ba chấm lửng (Ellipsis)",
-    "•": "Dấu chấm đầu dòng (Bullet)",
-  };
-
-  if (symbolNames[char]) return `${symbolNames[char]} (${hex})`;
-  if (viNames[char]) return `${viNames[char]} (${hex})`;
+  if (SYMBOL_GLYPH_NAMES[char]) return `${SYMBOL_GLYPH_NAMES[char]} (${hex})`;
+  if (VI_GLYPH_NAMES[char]) return `${VI_GLYPH_NAMES[char]} (${hex})`;
 
   const upperChar = char.toUpperCase();
-  if (viNames[upperChar]) {
-    return `${viNames[upperChar].replace("hoa", "thường")} (${hex})`;
+  if (VI_GLYPH_NAMES[upperChar]) {
+    return `${VI_GLYPH_NAMES[upperChar].replace("hoa", "thường")} (${hex})`;
   }
 
   return `Ký tự '${char}' (${hex})`;
+}
+
+// Pre-cached lowercase names for O(1) query filtering
+const ALL_GLYPH_CHARS = [
+  ...UPPERCASE_CHARS,
+  ...LOWERCASE_CHARS,
+  ...NUMERAL_CHARS,
+  ...VI_ACCENTED_UPPER,
+  ...VI_ACCENTED_LOWER,
+  ...PUNCTUATION_AND_SYMBOLS,
+];
+
+const GLYPH_NAME_CACHE = new Map<string, string>();
+for (const c of ALL_GLYPH_CHARS) {
+  GLYPH_NAME_CACHE.set(c, getGlyphName(c).toLowerCase());
 }
 
 // Subcomponent cho từng nhóm Glyph Grid
@@ -167,7 +184,7 @@ const GlyphGridGroup = React.memo(function GlyphGridGroup({
   if (chars.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 cv-glyph-grid">
       <div className="flex items-center justify-between text-[12px] text-muted">
         <span className="font-medium tracking-wide uppercase">{title}</span>
         <span className="font-mono text-[11px]">{chars.length}</span>
@@ -224,39 +241,39 @@ export function GlyphInspector({
   metrics,
   isTabActive = true,
 }: Props) {
-  const [selectedChar, setSelectedChar] = useState("R");
+  // Selected character state
+  const [selectedChar, setSelectedChar] = useState<string>("A");
+  const [setMode, setSetMode] = useState<"basic" | "full">("basic");
+  const [customInput, setCustomInput] = useState<string>("");
+  const deferredInput = useDeferredValue(customInput);
+  const [renderMode, setRenderMode] = useState<"solid" | "outlines">("solid");
+
+  // Selected font style & weight
   const [selectedStyleKey, setSelectedStyleKey] = useState<string>(
     styles[0]?.key ?? "regular"
   );
-  const [renderMode, setRenderMode] = useState<"solid" | "outlines">("solid");
-  const [setMode, setSetMode] = useState<"basic" | "full">("basic");
-  const [customInput, setCustomInput] = useState("");
-  const deferredInput = useDeferredValue(customInput);
 
-  // Container height measurement for dynamic responsive font-size
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [canvasHeight, setCanvasHeight] = useState(500);
-
-  useEffect(() => {
-    const node = containerRef.current;
-    if (!node) return;
-    const updateSize = () => {
-      if (node.clientHeight > 0) {
-        setCanvasHeight(node.clientHeight);
-      }
-    };
-    updateSize();
-    const ro = new ResizeObserver(updateSize);
-    ro.observe(node);
-    return () => ro.disconnect();
-  }, []);
-
-  const activeStyle =
-    styles.find((s) => s.key === selectedStyleKey) ?? styles[0];
+  const activeStyle = styles.find((s) => s.key === selectedStyleKey) ?? styles[0];
   const activeWeight = activeStyle?.weight ?? 400;
   const isItalic = activeStyle?.italic ?? false;
 
-  const codePoint = selectedChar.codePointAt(0) ?? 82;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasHeight, setCanvasHeight] = useState<number>(480);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.height > 0) {
+          setCanvasHeight(entry.contentRect.height);
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const codePoint = selectedChar.codePointAt(0) ?? 0;
   const hex = `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`;
   const charTitle = getGlyphName(selectedChar);
 
@@ -299,8 +316,8 @@ export function GlyphInspector({
           if (String(cp) === query) return true;
         }
 
-        // Match by character descriptive name
-        const name = getGlyphName(c).toLowerCase();
+        // Match by character descriptive name via cached Map
+        const name = GLYPH_NAME_CACHE.get(c) ?? getGlyphName(c).toLowerCase();
         if (name.includes(query)) return true;
 
         return false;
@@ -337,7 +354,7 @@ export function GlyphInspector({
 
   // ─────────────────────────────────────────────────────────────
   // TYPOGRAPHY METRICS & DIACRITICS HEADROOM CALCULATION
-  // Chống cắt dấu kép hoa tiếng Việt (Ắ, Ấ, Ế, Ố, Ớ, Ứ...)
+  // Chống cắt dấu kép hoa tiếng Việt (Ắ, Ấ, Ề, Ố, Ớ, Ứ...)
   // ─────────────────────────────────────────────────────────────
   const rawDescent = metrics?.descent ?? -211;
   const descent = rawDescent > 0 ? -rawDescent : rawDescent; // Always negative, e.g. -265
@@ -677,23 +694,23 @@ export function GlyphInspector({
       {/* Mobile Sticky Quick Preview Bar */}
       {isTabActive && (
         <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
-        <div className="flex items-center gap-3">
-          <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
-            {selectedChar}
-          </span>
-          <div className="flex flex-col">
-            <span className="font-mono text-[12px] font-bold text-ink">{hex}</span>
-            <span className="max-w-[170px] truncate text-[11px] text-muted">{charTitle}</span>
+          <div className="flex items-center gap-3">
+            <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
+              {selectedChar}
+            </span>
+            <div className="flex flex-col">
+              <span className="font-mono text-[12px] font-bold text-ink">{hex}</span>
+              <span className="max-w-[170px] truncate text-[11px] text-muted">{charTitle}</span>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={scrollToMetrics}
+            className="chip text-[12px] font-medium text-ink cursor-pointer"
+          >
+            Xem metric ↑
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={scrollToMetrics}
-          className="chip text-[12px] font-medium text-ink cursor-pointer"
-        >
-          Xem metric ↑
-        </button>
-      </div>
       )}
     </section>
   );

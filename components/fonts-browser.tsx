@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import type { FontFamily } from "@/lib/types";
 import { FontshareCard } from "./FontshareCard";
@@ -26,13 +26,17 @@ const PANGRAM_PRESETS = [
 
 const SIZE_PRESETS = [24, 36, 48, 64, 88, 120];
 
+// Vercel Best Practice: js-hoist-regexp (hoist regex creation outside render functions)
+const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
+const STROKE_D_REGEX = /đ/g;
+
 // Normalize Vietnamese string: lowercase first, strip diacritics, convert đ/Đ to d
 const normalize = (value: string) =>
   value
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d");
+    .replace(DIACRITICS_REGEX, "")
+    .replace(STROKE_D_REGEX, "d");
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -86,21 +90,26 @@ export function FontsBrowser({
     window.history.replaceState(null, "", url.toString());
   }, [query, category, onlyVariable, onlyVietnamese]);
 
+  // Vercel Best Practice: js-index-maps (Pre-compute normalized search index for fast O(1) text search)
+  const searchIndex = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of families) {
+      map.set(
+        f.slug,
+        normalize([f.name, f.designer, f.foundry, ...f.categories].join(" "))
+      );
+    }
+    return map;
+  }, [families]);
+
   const filtered = useMemo(() => {
-    const q = normalize(query);
+    const q = query ? normalize(query) : "";
     const result = families.filter((family) => {
       if (category && !family.categories.includes(category)) return false;
       if (onlyVietnamese && !family.vietnamese) return false;
       if (onlyVariable && family.axes.length === 0) return false;
       if (!q) return true;
-      const haystack = normalize(
-        [
-          family.name,
-          family.designer,
-          family.foundry,
-          ...family.categories,
-        ].join(" ")
-      );
+      const haystack = searchIndex.get(family.slug) ?? "";
       return haystack.includes(q);
     });
 
@@ -110,7 +119,13 @@ export function FontsBrowser({
       result.sort((a, b) => b.styles.length - a.styles.length);
     }
     return result;
-  }, [families, query, category, onlyVietnamese, onlyVariable, sortBy]);
+  }, [families, searchIndex, query, category, onlyVietnamese, onlyVariable, sortBy]);
+
+  // Vercel Best Practice: rerender-memo (Stable callback avoids breaking child React.memo)
+  const handleApplyToAll = useCallback((newText: string, newSize: number) => {
+    setText(newText);
+    setSize(newSize);
+  }, []);
 
   const hasActiveFilters =
     Boolean(query) ||
@@ -118,32 +133,38 @@ export function FontsBrowser({
     onlyVariable ||
     onlyVietnamese ||
     text !== "" ||
-    size !== 88;
+    size !== 88 ||
+    sortBy !== "default";
 
-  // React Transition helpers for buttery-smooth state updates
-  const handleSearchChange = (value: string) => {
-    setSearchInputValue(value);
+  const resetAll = () => {
+    setSearchInputValue("");
+    setQuery("");
+    setText("");
+    setSize(88);
+    setCategory("");
+    setOnlyVariable(false);
+    setOnlyVietnamese(false);
+    setSortBy("default");
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchInputValue(val);
     startTransition(() => {
-      setQuery(value);
+      setQuery(val);
     });
   };
 
-  const handleClearSearch = () => {
+  const clearSearchInput = () => {
     setSearchInputValue("");
     startTransition(() => {
       setQuery("");
     });
   };
 
-  const handleCategorySelect = (cat: string) => {
+  const handleCategoryChange = (cat: string) => {
     startTransition(() => {
       setCategory(cat);
-    });
-  };
-
-  const handleToggleVariable = () => {
-    startTransition(() => {
-      setOnlyVariable((prev) => !prev);
     });
   };
 
@@ -153,90 +174,70 @@ export function FontsBrowser({
     });
   };
 
+  const handleToggleVariable = () => {
+    startTransition(() => {
+      setOnlyVariable((prev) => !prev);
+    });
+  };
+
   const handleSortChange = (newSort: "default" | "name" | "styles") => {
     startTransition(() => {
       setSortBy(newSort);
     });
   };
 
-  function resetAll() {
-    setSearchInputValue("");
-    startTransition(() => {
-      setQuery("");
-      setText("");
-      setSize(88);
-      setCategory("");
-      setOnlyVariable(false);
-      setOnlyVietnamese(false);
-      setSortBy("default");
-    });
-  }
-
   return (
-    <div className="shell pb-20">
-      {/* Page Title & Count */}
-      <div className="flex items-baseline justify-between border-b border-line py-5">
-        <h1 className="text-[14px] font-bold tracking-tight">Bộ font</h1>
-        <div className="flex items-center gap-3">
-          {isPending && (
-            <span className="text-[12px] font-medium text-muted animate-pulse">
-              Đang lọc...
-            </span>
-          )}
-          <p className="micro">
-            {filtered.length} / {families.length} họ chữ
-          </p>
-        </div>
-      </div>
-
-      {/* Fontshare Signature Interactive Control Bar */}
+    <div className="shell pb-24 pt-4 md:pt-8">
+      {/* Search & Global Controls Header */}
       <div className="border-b border-line">
-        {/* Row 1: Search & Custom Specimen Text Input */}
-        <div className="grid grid-cols-1 border-b border-line md:grid-cols-12">
-          {/* Search Input */}
-          <div className="flex items-center gap-3 border-b border-line py-3.5 md:col-span-4 md:border-b-0 md:border-r md:border-line md:pr-6 md:py-4">
-            <Magnifier className="shrink-0 text-muted" />
-            <label htmlFor="search-fonts" className="sr-only">
-              Tìm theo tên, nhà thiết kế
+        {/* Row 1: Big Search Input & Global Specimen Text input */}
+        <div className="grid grid-cols-1 gap-2 border-b border-line py-3 md:grid-cols-12 md:gap-4 md:py-4">
+          {/* Big Search Input */}
+          <div className="relative flex items-center md:col-span-6">
+            <Magnifier className="mr-3 shrink-0 text-muted" />
+            <label htmlFor="search-families-input" className="sr-only">
+              Tìm theo tên họ chữ, tác giả hoặc nhà phát hành
             </label>
             <input
-              id="search-fonts"
+              id="search-families-input"
               type="search"
               value={searchInputValue}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Tìm theo tên, nhà thiết kế…"
-              className="w-full bg-transparent text-[14px] leading-[20px] outline-none placeholder:text-muted focus-visible:ring-1 focus-visible:ring-ink"
+              onChange={handleSearchInputChange}
+              placeholder="Tìm theo tên họ chữ, tác giả..."
+              className="w-full bg-transparent text-[16px] sm:text-[18px] md:text-[20px] font-medium leading-tight outline-none placeholder:text-muted"
             />
             {searchInputValue && (
               <button
                 type="button"
-                onClick={handleClearSearch}
-                className="flex h-7 w-7 items-center justify-center text-muted hover:text-ink cursor-pointer transition-colors"
-                aria-label="Xóa tìm kiếm"
+                onClick={clearSearchInput}
+                className="p-1 text-muted hover:text-ink cursor-pointer"
+                title="Xóa tìm kiếm"
+                aria-label="Xóa nội dung tìm kiếm"
               >
                 <XIcon className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          {/* Live Preview Text Input */}
-          <div className="flex items-center gap-3 py-3.5 md:col-span-8 md:pl-6 md:py-4">
-            <label htmlFor="custom-preview-text" className="micro shrink-0 text-[13px] sm:text-[14px]">
-              Chữ thử chung
+          {/* Global Specimen Sample Text */}
+          <div className="relative flex items-center border-t border-line/60 pt-2 md:col-span-6 md:border-t-0 md:border-l md:border-line md:pl-6 md:pt-0">
+            <label htmlFor="custom-sample-text-input" className="sr-only">
+              Nhập chữ thử nghiệm chung cho toàn bộ danh sách font
             </label>
             <input
-              id="custom-preview-text"
+              id="custom-sample-text-input"
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Nhập chữ thử cho tất cả font…"
-              className="w-full bg-transparent text-[14px] sm:text-[15px] leading-[22px] outline-none placeholder:text-faint focus-visible:ring-1 focus-visible:ring-ink"
+              placeholder="Nhập chữ thử nghiệm chung..."
+              className="w-full bg-transparent text-[14px] sm:text-[15px] outline-none placeholder:text-muted"
             />
             {text && (
               <button
                 type="button"
                 onClick={() => setText("")}
-                className="flex h-7 w-7 items-center justify-center text-muted hover:text-ink cursor-pointer transition-colors"
+                className="p-1 text-muted hover:text-ink cursor-pointer"
+                title="Xóa chữ thử"
                 aria-label="Xóa nội dung thử"
               >
                 <XIcon className="h-4 w-4" />
@@ -298,16 +299,16 @@ export function FontsBrowser({
             </div>
 
             {/* View Mode Toggle: List vs Grid */}
-            <div className="flex items-center gap-1 border-l border-line pl-3">
+            <div className="flex items-center gap-1 rounded bg-soft p-1">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
-                aria-label="Dạng danh sách (List view)"
-                title="Dạng danh sách"
-                className={`p-2 transition-all duration-200 cursor-pointer active:scale-95 ${
+                aria-label="Xem dạng danh sách mẫu chữ"
+                title="Dạng danh sách mẫu chữ"
+                className={`rounded p-1.5 transition-colors cursor-pointer ${
                   viewMode === "list"
                     ? "bg-solid-bg text-solid-ink"
-                    : "text-muted hover:text-ink hover:bg-soft/50"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 <ListIcon />
@@ -315,12 +316,12 @@ export function FontsBrowser({
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
-                aria-label="Dạng lưới (Grid view)"
-                title="Dạng lưới"
-                className={`p-2 transition-all duration-200 cursor-pointer active:scale-95 ${
+                aria-label="Xem dạng lưới thẻ font"
+                title="Dạng lưới thẻ font"
+                className={`rounded p-1.5 transition-colors cursor-pointer ${
                   viewMode === "grid"
                     ? "bg-solid-bg text-solid-ink"
-                    : "text-muted hover:text-ink hover:bg-soft/50"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 <GridIcon />
@@ -329,34 +330,38 @@ export function FontsBrowser({
           </div>
         </div>
 
-        {/* Row 3: Categories & Feature Filters & Sorting */}
-        <div className="flex flex-col gap-3 border-t border-line py-3 text-[13px] sm:text-[14px] md:flex-row md:items-center md:justify-between">
-          {/* Category Pills (Horizontal scrollable on mobile) */}
-          <div className="flex items-center gap-x-3 sm:gap-x-5 gap-y-1 overflow-x-auto no-scrollbar mask-fade-right pb-1 md:pb-0 md:flex-wrap md:mask-none">
-            <button
-              type="button"
-              onClick={() => handleCategorySelect("")}
-              className="chip font-medium shrink-0 cursor-pointer"
-              data-active={category === "" || undefined}
-            >
-              Tất cả
-            </button>
-            {categories.map((cat) => (
+        {/* Row 3: Category Pills Filter & Meta status */}
+        <div className="border-t border-line/60 py-3 md:py-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-4">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1 md:pb-0 md:flex-wrap md:mask-none">
+              <span className="micro mr-1 shrink-0 text-[12px] sm:text-[13px]">Phân loại:</span>
               <button
-                key={cat}
                 type="button"
-                onClick={() => handleCategorySelect(category === cat ? "" : cat)}
-                className="chip capitalize font-medium shrink-0 cursor-pointer"
-                data-active={category === cat || undefined}
+                onClick={() => handleCategoryChange("")}
+                className="chip cursor-pointer"
+                data-active={category === "" || undefined}
               >
-                {cat}
+                Tất cả ({families.length})
               </button>
-            ))}
-          </div>
+              {categories.map((cat) => {
+                const count = families.filter((f) =>
+                  f.categories.includes(cat)
+                ).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryChange(cat)}
+                    className="chip capitalize cursor-pointer"
+                    data-active={category === cat || undefined}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
 
-          {/* Extra Filters & Sort & Reset */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line/40 md:border-t-0 md:pt-0 md:justify-end">
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
+              <span className="mx-2 h-4 w-px bg-line" />
+
               <button
                 type="button"
                 onClick={handleToggleVietnamese}
@@ -430,10 +435,7 @@ export function FontsBrowser({
                 family={family}
                 globalText={text}
                 globalSize={size}
-                onApplyToAll={(newText, newSize) => {
-                  setText(newText);
-                  setSize(newSize);
-                }}
+                onApplyToAll={handleApplyToAll}
               />
             ))}
           </div>
@@ -451,7 +453,7 @@ export function FontsBrowser({
               return (
                 <div
                   key={family.slug}
-                  className="group flex flex-col justify-between bg-panel p-6 card-hover-smooth"
+                  className="group flex flex-col justify-between bg-panel p-6 cv-card card-hover-smooth"
                 >
                   <div>
                     <div className="flex items-baseline justify-between">

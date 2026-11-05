@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { FontFamily } from "@/lib/types";
 import { ArrowRightIcon } from "./icons";
@@ -12,8 +12,11 @@ type Props = {
 };
 
 export function FontPairsInspector({ family, allFamilies }: Props) {
-    // Available partner fonts (excluding the current font)
-  const partnerOptions = allFamilies.filter((f) => f.slug !== family.slug);
+  // Available partner fonts (excluding the current font) - memoized to prevent re-filtering on keystroke
+  const partnerOptions = useMemo(
+    () => allFamilies.filter((f) => f.slug !== family.slug),
+    [allFamilies, family.slug]
+  );
   const initialPartner = partnerOptions[0] ?? family;
 
   // Studio states
@@ -30,8 +33,20 @@ export function FontPairsInspector({ family, allFamilies }: Props) {
     "Mỗi con chữ mang trong mình hơi thở lịch sử, sự cân bằng hài hòa giữa độ mảnh dẻ của dấu thanh và tính đăng đối trong cấu trúc chữ Latinh hiện đại."
   );
 
-  const partnerFamily =
-    allFamilies.find((f) => f.slug === partnerSlug) ?? initialPartner;
+  const partnerFamily = useMemo(
+    () => allFamilies.find((f) => f.slug === partnerSlug) ?? initialPartner,
+    [allFamilies, partnerSlug, initialPartner]
+  );
+
+  const selectOptions = useMemo(
+    () =>
+      partnerOptions.map((f) => ({
+        value: f.slug,
+        label: f.name,
+        sublabel: f.categories.join(", "),
+      })),
+    [partnerOptions]
+  );
 
   // Determine which font is assigned to which role
   const headingFont = isCurrentHeading ? family : partnerFamily;
@@ -72,11 +87,7 @@ export function FontPairsInspector({ family, allFamilies }: Props) {
               aria-label="Chọn font phối hợp"
               value={partnerSlug}
               onChange={setPartnerSlug}
-              options={partnerOptions.map((f) => ({
-                value: f.slug,
-                label: f.name,
-                sublabel: f.categories.join(", "),
-              }))}
+              options={selectOptions}
             />
           </div>
 

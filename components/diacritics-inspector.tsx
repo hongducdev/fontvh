@@ -11,6 +11,20 @@ import {
 import { CopyIcon, CheckIcon } from "./icons";
 import { CustomSelect } from "./custom-select";
 
+// Vercel Best Practice: js-index-maps & rerender-lazy-state-init
+// Hoist static default char and matrix cell map outside component scope to avoid O(n) finds on every render
+const DEFAULT_DIACRITIC_CHAR: DiacriticCharInfo =
+  VIETNAMESE_DIACRITIC_MATRIX.find((r) => r.id === "o-horn")?.chars.find(
+    (c) => c.tone === "hook"
+  ) ?? VIETNAMESE_DIACRITIC_MATRIX[0].chars[1];
+
+const MATRIX_CELL_MAP = new Map<string, DiacriticCharInfo>();
+for (const row of VIETNAMESE_DIACRITIC_MATRIX) {
+  for (const c of row.chars) {
+    MATRIX_CELL_MAP.set(`${row.id}:${c.tone}`, c);
+  }
+}
+
 interface Props {
   slug: string;
   name: string;
@@ -29,12 +43,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
   const activeWeight = activeStyle?.weight ?? 400;
   const isItalic = activeStyle?.italic ?? false;
 
-  // Selected character from matrix (default: Ợ / ợ - the classic acid test)
-  const defaultChar = VIETNAMESE_DIACRITIC_MATRIX.find(
-    (r) => r.id === "o-horn"
-  )?.chars.find((c) => c.tone === "hook") ?? VIETNAMESE_DIACRITIC_MATRIX[0].chars[1];
-
-  const [selectedChar, setSelectedChar] = useState<DiacriticCharInfo>(defaultChar);
+  const [selectedChar, setSelectedChar] = useState<DiacriticCharInfo>(DEFAULT_DIACRITIC_CHAR);
   const [displayCase, setDisplayCase] = useState<"both" | "lower" | "upper">("both");
   const [showGuides, setShowGuides] = useState<boolean>(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -77,7 +86,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
   const ascender = metrics?.ascent ?? 1000;
   const unitsPerEm = metrics?.unitsPerEm ?? 1000;
 
-  // Maximum diacritic height calculation (accommodating Vietnamese double-stacked marks: Ắ, Ấ, Ế, Ố, Ớ...)
+  // Maximum diacritic height calculation (accommodating Vietnamese double-stacked marks: Ắ, Ấ, Ề, Ố, Ớ...)
   const maxAccentHeight = Math.max(ascender, Math.round(capHeight * 1.38));
   const span = maxAccentHeight + Math.abs(descent);
   const padTop = Math.round(span * 0.16);
@@ -158,144 +167,148 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
             options={styles.map((s) => ({
               value: s.key,
               label: s.name,
-              sublabel: `${s.weight}${s.italic ? " Italic" : ""}`,
             }))}
             size="sm"
           />
 
-          {/* Case switch */}
-          <div className="flex items-center rounded border border-line bg-panel p-0.5 text-[12px]">
+          {/* Upper / Lower / Both selector */}
+          <div className="flex items-center rounded border border-line bg-paper p-0.5 text-[12px]">
             <button
               type="button"
               onClick={() => setDisplayCase("both")}
-              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
-                displayCase === "both" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
+              className={`rounded px-2.5 py-1 transition-colors cursor-pointer ${
+                displayCase === "both"
+                  ? "bg-ink font-semibold text-paper"
+                  : "text-muted hover:text-ink"
               }`}
             >
-              Cả hai (Aa)
+              Cả hai
             </button>
             <button
               type="button"
               onClick={() => setDisplayCase("upper")}
-              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
-                displayCase === "upper" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
+              className={`rounded px-2.5 py-1 transition-colors cursor-pointer ${
+                displayCase === "upper"
+                  ? "bg-ink font-semibold text-paper"
+                  : "text-muted hover:text-ink"
               }`}
             >
-              Hoa (A)
+              Chữ hoa
             </button>
             <button
               type="button"
               onClick={() => setDisplayCase("lower")}
-              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
-                displayCase === "lower" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
+              className={`rounded px-2.5 py-1 transition-colors cursor-pointer ${
+                displayCase === "lower"
+                  ? "bg-ink font-semibold text-paper"
+                  : "text-muted hover:text-ink"
               }`}
             >
-              Thường (a)
+              Chữ thường
             </button>
           </div>
-
-          {/* Toggle Guides */}
-          <button
-            type="button"
-            onClick={() => setShowGuides(!showGuides)}
-            className={`rounded border px-2.5 py-1.5 text-[12px] font-medium transition-colors cursor-pointer ${
-              showGuides
-                ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                : "border-line text-muted hover:text-ink"
-            }`}
-          >
-            {showGuides ? "✓ Thước đo Bật" : "Thước đo Tắt"}
-          </button>
         </div>
       </div>
 
-      {/* 2. TWO-COLUMN WORKSPACE: LEFT ZOOM / RIGHT MATRIX */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-        
-        {/* LEFT COLUMN: ANCHOR ZOOM CANVAS (STICKY) */}
+      {/* 2. TWO-COLUMN WORKSPACE: LEFT ZOOM INSPECTOR + RIGHT MATRIX */}
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-12">
+        {/* ── LEFT COLUMN: FOCUSED ZOOM CANVAS (Sticky on desktop) ── */}
         <div className="lg:col-span-5 flex flex-col lg:sticky lg:top-24 self-start">
-          <div className="flex items-center justify-between border-b border-line/60 pb-2.5 text-[13px]">
-            <span className="font-semibold text-ink">
-              Khung Phóng To Dấu Ký Tự
-            </span>
-            <span className="font-mono text-muted text-[12px]">
-              {selectedChar.upperUnicode} · {selectedChar.lowerUnicode}
-            </span>
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <div>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+                Đang soi chi tiết
+              </span>
+              <h3 className="text-[17px] font-bold text-ink">
+                {selectedChar.upper} / {selectedChar.lower}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGuides((prev) => !prev)}
+              className={`rounded border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+                showGuides
+                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : "border-line text-muted hover:text-ink"
+              }`}
+            >
+              {showGuides ? "Ẩn lưới trục" : "Hiện lưới trục"}
+            </button>
           </div>
 
-          {/* Typographic Zoom Viewport */}
+          {/* Metric Diagram Canvas with mathematical SVG scaling */}
           <div
             ref={canvasContainerRef}
-            className="relative mt-3 flex min-h-[300px] xs:min-h-[360px] md:min-h-[440px] overflow-hidden border border-line bg-panel select-none"
+            className="relative mt-4 flex min-h-[340px] md:min-h-[440px] w-full items-center justify-center overflow-hidden rounded border border-line bg-panel p-6 select-none"
           >
-            {/* Typographic Guidelines */}
+            {/* Background Grid Pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+
+            {/* Typography Guideline Overlays */}
             {showGuides && (
-              <div className="pointer-events-none absolute inset-0 z-10">
-                {/* Accent Ceiling */}
+              <>
+                {/* Accent Ceiling Guide (Vietnamese double-stack limit) */}
                 <div
-                  className="absolute left-4 right-4 flex items-center justify-between -translate-y-1/2"
+                  className="absolute left-4 right-4 flex items-center justify-between text-[10px] text-amber-600 dark:text-amber-400 -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
                   style={{ top: `${accentCeilingPct}%` }}
                 >
-                  <span className="bg-panel px-1 text-[10px] font-mono font-medium text-amber-600 dark:text-amber-400">
-                    Accent Ceiling
+                  <span className="font-mono tracking-wider uppercase font-semibold">
+                    Đỉnh dấu mũ (Accent Top)
                   </span>
-                  <div className="mx-2 flex-1 border-b border-dashed border-amber-500/50" />
-                  <span className="bg-panel px-1 text-[10px] font-mono text-amber-600 dark:text-amber-400">
-                    ~{Math.round(capHeight * 1.35)}
-                  </span>
+                  <div className="mx-2 flex-1 border-b border-amber-500/50 border-dotted" />
+                  <span className="font-mono text-[9px]">Max Diacritic</span>
                 </div>
 
-                {/* Cap Height */}
+                {/* Cap Height Guide */}
                 <div
-                  className="absolute left-4 right-4 flex items-center justify-between -translate-y-1/2"
+                  className="absolute left-4 right-4 flex items-center justify-between text-[10px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
                   style={{ top: `${capHeightPct}%` }}
                 >
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">
-                    Cap Height
-                  </span>
-                  <div className="mx-2 flex-1 border-b border-dashed border-line-accent" />
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">{capHeight}</span>
+                  <span className="font-mono tracking-wider uppercase">Cap Height</span>
+                  <div className="mx-2 flex-1 border-b border-muted/40 border-dashed" />
+                  <span className="font-mono text-[9px]">{capHeight}</span>
                 </div>
 
-                {/* X Height */}
+                {/* X-Height Guide */}
                 <div
-                  className="absolute left-4 right-4 flex items-center justify-between -translate-y-1/2"
+                  className="absolute left-4 right-4 flex items-center justify-between text-[10px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
                   style={{ top: `${xHeightPct}%` }}
                 >
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">
-                    x-Height
-                  </span>
-                  <div className="mx-2 flex-1 border-b border-dashed border-line-accent/70" />
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">{xHeight}</span>
+                  <span className="font-mono tracking-wider uppercase">X-Height</span>
+                  <div className="mx-2 flex-1 border-b border-muted/30 border-dashed" />
+                  <span className="font-mono text-[9px]">{xHeight}</span>
                 </div>
 
-                {/* Baseline */}
+                {/* Baseline (Alphabetic = 0) */}
                 <div
-                  className="absolute left-4 right-4 flex items-center justify-between -translate-y-1/2"
+                  className="absolute left-4 right-4 flex items-center justify-between text-[10px] font-bold text-ink -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
                   style={{ top: `${baselinePct}%` }}
                 >
-                  <span className="bg-panel px-1 text-[10px] font-mono font-bold text-ink">
-                    Baseline
-                  </span>
-                  <div className="mx-2 flex-1 border-b border-solid border-ink/40" />
-                  <span className="bg-panel px-1 text-[10px] font-mono font-bold text-ink">0</span>
+                  <span className="font-mono tracking-wider uppercase">Baseline</span>
+                  <div className="mx-2 flex-1 border-b border-ink/40" />
+                  <span className="font-mono text-[9px]">0</span>
                 </div>
 
-                {/* Descender */}
+                {/* Descender Guide */}
                 <div
-                  className="absolute left-4 right-4 flex items-center justify-between -translate-y-1/2"
+                  className="absolute left-4 right-4 flex items-center justify-between text-[10px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
                   style={{ top: `${descenderPct}%` }}
                 >
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">
-                    Descender
-                  </span>
-                  <div className="mx-2 flex-1 border-b border-dashed border-line-accent" />
-                  <span className="bg-panel px-1 text-[10px] font-mono text-muted">{descent}</span>
+                  <span className="font-mono tracking-wider uppercase">Descender</span>
+                  <div className="mx-2 flex-1 border-b border-muted/30 border-dashed" />
+                  <span className="font-mono text-[9px]">{descent}</span>
                 </div>
-              </div>
+              </>
             )}
 
-            {/* SVG Glyph strictly aligned to Alphabetic Baseline */}
+            {/* Mathematically Anchored SVG Text on exact Baseline */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
               aria-hidden="true"
@@ -317,85 +330,90 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
             </svg>
           </div>
 
-          {/* Diacritic Info Card */}
-          <div className="mt-3 rounded border border-line bg-paper p-4 text-[13px]">
-            <div className="flex items-center justify-between pb-3 border-b border-line/60">
+          {/* Glyph Anatomy Metadata Panel */}
+          <div className="mt-4 rounded border border-line bg-panel p-4 text-[12px] space-y-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <h4 className="font-bold text-ink text-[14px] sm:text-[15px]">
-                  {selectedChar.upperName} / {selectedChar.lowerName}
-                </h4>
-                <p className="text-[12px] text-muted mt-0.5">
-                  Thanh: <span className="font-medium text-ink">{selectedChar.toneName}</span> · Loại:{" "}
-                  <span className="font-medium text-ink">
-                    {selectedChar.accentType === "base"
-                      ? "Nguyên âm gốc"
-                      : selectedChar.accentType === "circumflex"
-                      ? "Dấu mũ (Circumflex)"
-                      : selectedChar.accentType === "breve"
-                      ? "Dấu trăng (Breve)"
-                      : selectedChar.accentType === "horn"
-                      ? "Dấu móc (Horn)"
-                      : "Gạch ngang (Stroke)"}
+                <span className="text-[10px] uppercase font-mono text-muted block">Chữ hoa</span>
+                <span className="text-[16px] font-bold text-ink" style={fontStyle}>
+                  {selectedChar.upper}
+                </span>
+                <p className="text-[11px] text-muted truncate mt-0.5">{selectedChar.upperName}</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] bg-paper px-1.5 py-0.5 rounded border border-line">
+                    {selectedChar.upperUnicode}
                   </span>
-                </p>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(selectedChar.upper, "upper")}
+                    className="p-1 text-muted hover:text-ink cursor-pointer"
+                    title="Sao chép chữ hoa"
+                    aria-label={`Sao chép ${selectedChar.upper}`}
+                  >
+                    {copiedKey === "upper" ? (
+                      <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <CopyIcon className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Copy character buttons with safe handler */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  title="Sao chép chữ hoa"
-                  aria-label={`Sao chép chữ ${selectedChar.upper}`}
-                  onClick={() => handleCopy(selectedChar.upper, "upper")}
-                  className="flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] font-medium hover:border-ink cursor-pointer"
-                >
-                  {copiedKey === "upper" ? <CheckIcon className="text-emerald-500" /> : <CopyIcon />}
-                  <span>{selectedChar.upper}</span>
-                </button>
-                <button
-                  type="button"
-                  title="Sao chép chữ thường"
-                  aria-label={`Sao chép chữ ${selectedChar.lower}`}
-                  onClick={() => handleCopy(selectedChar.lower, "lower")}
-                  className="flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] font-medium hover:border-ink cursor-pointer"
-                >
-                  {copiedKey === "lower" ? <CheckIcon className="text-emerald-500" /> : <CopyIcon />}
-                  <span>{selectedChar.lower}</span>
-                </button>
+              <div>
+                <span className="text-[10px] uppercase font-mono text-muted block">Chữ thường</span>
+                <span className="text-[16px] font-bold text-ink" style={fontStyle}>
+                  {selectedChar.lower}
+                </span>
+                <p className="text-[11px] text-muted truncate mt-0.5">{selectedChar.lowerName}</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] bg-paper px-1.5 py-0.5 rounded border border-line">
+                    {selectedChar.lowerUnicode}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(selectedChar.lower, "lower")}
+                    className="p-1 text-muted hover:text-ink cursor-pointer"
+                    title="Sao chép chữ thường"
+                    aria-label={`Sao chép ${selectedChar.lower}`}
+                  >
+                    {copiedKey === "lower" ? (
+                      <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <CopyIcon className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Unicode table snippet */}
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
-              <div className="rounded bg-panel p-2">
-                <span className="text-muted block text-[10px] uppercase font-mono">Chữ Hoa</span>
-                <span className="font-mono font-medium text-ink">{selectedChar.upperUnicode}</span>
-                <span className="ml-1.5 text-muted">({selectedChar.upper.codePointAt(0) ?? 0})</span>
-              </div>
-              <div className="rounded bg-panel p-2">
-                <span className="text-muted block text-[10px] uppercase font-mono">Chữ Thường</span>
-                <span className="font-mono font-medium text-ink">{selectedChar.lowerUnicode}</span>
-                <span className="ml-1.5 text-muted">({selectedChar.lower.codePointAt(0) ?? 0})</span>
-              </div>
+            <div className="border-t border-line/60 pt-2.5 flex items-center justify-between text-[11px] text-muted">
+              <span>Thanh điệu: <strong className="text-ink">{selectedChar.tone}</strong></span>
+              <span>Font: <strong className="text-ink">{name} ({activeStyle.name})</strong></span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: DIACRITIC MATRIX TABLE */}
+        {/* ── RIGHT COLUMN: FULL 6-TONE DIACRITICS MATRIX TABLE ── */}
         <div className="lg:col-span-7">
-          <div className="flex items-center justify-between text-[12px] text-muted mb-2 lg:hidden">
-            <span>← Vuốt ngang để xem đủ 6 thanh điệu →</span>
+          <div className="border-b border-line pb-3">
+            <h3 className="text-[17px] font-bold text-ink">
+              Ma Trận 6 Thanh Điệu (Full Diacritics Matrix)
+            </h3>
+            <p className="text-[12px] text-muted mt-0.5">
+              Bấm vào bất kỳ ô ký tự nào để phóng to kiểm tra góc đặt dấu và tỷ lệ nét.
+            </p>
           </div>
-          <div className="border border-line bg-paper overflow-x-auto no-scrollbar">
+
+          <div className="mt-4 overflow-x-auto rounded border border-line bg-paper">
             <table className="w-full text-center border-collapse min-w-[560px]">
-              {/* Matrix Head: 6 Tones */}
+              {/* Matrix Table Header: 6 Tone columns */}
               <thead>
-                <tr className="border-b border-line bg-panel text-[12px] text-muted">
-                  <th className="sticky left-0 z-10 bg-panel py-2.5 px-3 text-left font-semibold text-ink border-r border-line w-28 shadow-[1px_0_0_0_var(--line)]">
-                    Nguyên âm
+                <tr className="border-b border-line bg-panel text-[12px]">
+                  <th className="py-2.5 px-3 text-left font-mono font-medium text-muted w-24">
+                    Gốc
                   </th>
                   {VIETNAMESE_TONES.map((t) => (
-                    <th key={t.id} className="py-2.5 px-2 font-medium min-w-[65px]">
+                    <th key={t.id} className="py-2.5 px-2 font-medium">
                       <div className="flex flex-col items-center">
                         <span className="text-ink font-semibold">{t.name}</span>
                         <span className="text-[10px] text-muted font-mono">{t.symbol}</span>
@@ -413,15 +431,15 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
                     <td className="sticky left-0 z-10 bg-panel py-3 px-3 text-left border-r border-line font-medium text-[13px] shadow-[1px_0_0_0_var(--line)]">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-ink">{row.baseChar}</span>
-                        <span className="text-[11px] text-muted truncate max-w-[80px]" title={row.name}>
+                        <span className="text-[11px] text-muted truncate max-w-[80px]\" title={row.name}>
                           {row.accentType === "base" ? "" : `(${row.accentType})`}
                         </span>
                       </div>
                     </td>
 
-                    {/* 6 Tone Cells */}
+                    {/* 6 Tone Cells - O(1) indexed via MATRIX_CELL_MAP */}
                     {VIETNAMESE_TONES.map((t) => {
-                      const charItem = row.chars.find((c) => c.tone === t.id);
+                      const charItem = MATRIX_CELL_MAP.get(`${row.id}:${t.id}`);
 
                       if (!charItem) {
                         return (
@@ -537,7 +555,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
         {/* Word Chips and Sample Sentences */}
         <div className="mt-8 space-y-6">
           {filteredStressCases.map((testCase) => (
-            <div key={testCase.id} className="rounded border border-line bg-paper p-4 sm:p-5">
+            <div key={testCase.id} className="rounded border border-line bg-paper p-4 sm:p-5 cv-card">
               <div className="flex items-center justify-between border-b border-line/60 pb-2 mb-4">
                 <div>
                   <h4 className="font-bold text-ink text-[14px] sm:text-[15px]">{testCase.category}</h4>
@@ -597,27 +615,27 @@ export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive =
       {/* Mobile Sticky Quick Preview Bar */}
       {isTabActive && (
         <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
-        <div className="flex items-center gap-3">
-          <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
-            {selectedChar.upper} {selectedChar.lower}
-          </span>
-          <div className="flex flex-col">
-            <span className="font-mono text-[12px] font-bold text-ink">
-              {selectedChar.lowerUnicode}
+          <div className="flex items-center gap-3">
+            <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
+              {selectedChar.upper} {selectedChar.lower}
             </span>
-            <span className="max-w-[140px] truncate text-[11px] text-muted">
-              {selectedChar.upperName}
-            </span>
+            <div className="flex flex-col">
+              <span className="font-mono text-[12px] font-bold text-ink">
+                {selectedChar.lowerUnicode}
+              </span>
+              <span className="max-w-[140px] truncate text-[11px] text-muted">
+                {selectedChar.upperName}
+              </span>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={scrollToZoom}
+            className="chip text-[12px] font-medium text-ink cursor-pointer"
+          >
+            Xem metric ↑
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={scrollToZoom}
-          className="chip text-[12px] font-medium text-ink cursor-pointer"
-        >
-          Xem metric ↑
-        </button>
-      </div>
       )}
     </section>
   );

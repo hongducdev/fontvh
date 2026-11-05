@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import Link from "next/link";
 import type { FontPairing } from "@/lib/pairings";
 import { ArrowRightIcon, SwapIcon, CheckIcon, CopyIcon } from "./icons";
 
-function PairingCard({ pairing }: { pairing: FontPairing }) {
+// Vercel Best Practice: rerender-memo & rendering-content-visibility
+// Memoize individual pairing cards with content-visibility to keep list interactions fast
+const PairingCard = memo(function PairingCard({ pairing }: { pairing: FontPairing }) {
   const [swapped, setSwapped] = useState(false);
   const [headingText, setHeadingText] = useState(pairing.heading.sample);
   const [bodyText, setBodyText] = useState(pairing.body.sample);
@@ -57,7 +59,7 @@ font-weight: ${bodyWeight};`;
   };
 
   return (
-    <div className="border-b border-line bg-panel p-5 sm:p-6 text-panel-ink transition-colors md:p-10">
+    <div className="border-b border-line bg-panel p-5 sm:p-6 text-panel-ink transition-colors md:p-10 cv-card">
       {/* Header Info & Tag */}
       <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line/60 pb-5 text-[14px]">
         <div className="flex flex-wrap items-baseline gap-3 sm:gap-4">
@@ -167,7 +169,7 @@ font-weight: ${bodyWeight};`;
             rows={3}
             value={bodyText}
             onChange={(e) => setBodyText(e.target.value)}
-            className="w-full resize-none overflow-hidden bg-transparent leading-[1.65] text-panel-ink outline-none break-words"
+            className="w-full resize-none overflow-hidden bg-transparent leading-[1.65] text-panel-muted outline-none break-words"
             style={{
               fontFamily: `'${bodyFont.slug}', sans-serif`,
               fontSize: `${bodySize}px`,
@@ -213,21 +215,25 @@ font-weight: ${bodyWeight};`;
       </div>
     </div>
   );
-}
+});
 
 export function PairingsView({ pairings }: { pairings: FontPairing[] }) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
-  const allTags = Array.from(
-    new Set(pairings.flatMap((p) => [p.category, ...p.tags]))
+  const allTags = useMemo(
+    () => Array.from(new Set(pairings.flatMap((p) => [p.category, ...p.tags]))),
+    [pairings]
   );
 
-  const filtered =
-    selectedTag === "all"
-      ? pairings
-      : pairings.filter(
-          (p) => p.category === selectedTag || p.tags.includes(selectedTag)
-        );
+  const filtered = useMemo(
+    () =>
+      selectedTag === "all"
+        ? pairings
+        : pairings.filter(
+            (p) => p.category === selectedTag || p.tags.includes(selectedTag)
+          ),
+    [pairings, selectedTag]
+  );
 
   return (
     <div className="pb-20">

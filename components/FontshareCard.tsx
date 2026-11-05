@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { FontFamily, FontStyle } from "@/lib/types";
+import {
+  isFavorite as checkIsFavorite,
+  toggleFavorite as doToggleFavorite,
+  subscribeFavorites,
+} from "@/lib/favorites";
 import {
   StarIcon,
   DownloadIcon,
@@ -28,7 +33,7 @@ type Props = {
   className?: string;
 };
 
-export function FontshareCard({
+export const FontshareCard = memo(function FontshareCard({
   family,
   globalText,
   globalSize,
@@ -60,7 +65,6 @@ export function FontshareCard({
     family.axes.length > 0 ? "Variable" : defaultStyle?.name ?? "Regular"
   );
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
   const [colorMode, setColorMode] = useState<"black" | "white">("black");
@@ -77,37 +81,23 @@ export function FontshareCard({
     }
   }, [globalSize, isCustomized]);
 
-  // Read favorite from localStorage
-  useEffect(() => {
-    try {
-      const favs = JSON.parse(localStorage.getItem("fontvh_favorites") || "[]");
-      if (Array.isArray(favs) && favs.includes(family.slug)) {
-        setIsFavorite(true);
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, [family.slug]);
+  // Vercel Best Practice: js-cache-storage & client-event-listeners via useSyncExternalStore
+  const isFavorite = useSyncExternalStore(
+    subscribeFavorites,
+    () => checkIsFavorite(family.slug),
+    () => false
+  );
 
-  // Toggle favorite
   const toggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const next = !isFavorite;
-    setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("fontvh_favorites") || "[]");
-      const updated = next
-        ? Array.from(new Set([...favs, family.slug]))
-        : favs.filter((s: string) => s !== family.slug);
-      localStorage.setItem("fontvh_favorites", JSON.stringify(updated));
-    } catch {
-      // Ignore
-    }
+    doToggleFavorite(family.slug);
   };
 
-  // Close dropdown on click outside
+  // Vercel Best Practice (client-event-listeners): Only attach listener when dropdown is open
   useEffect(() => {
+    if (!isStyleDropdownOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current &&
@@ -118,7 +108,7 @@ export function FontshareCard({
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isStyleDropdownOpen]);
 
   const currentText = isCustomized
     ? localText ?? ""
@@ -200,7 +190,7 @@ export function FontshareCard({
             } as React.CSSProperties)
           : undefined
       }
-      className={`group relative transition-colors ${
+      className={`group relative cv-card transition-colors ${
         isLight
           ? "bg-[#fafaf8] text-[#121212]"
           : "bg-panel text-panel-ink hover:bg-row-hover"
@@ -260,43 +250,53 @@ export function FontshareCard({
 
             {isStyleDropdownOpen && (
               <div
-                className={`absolute left-0 top-full z-40 mt-1 max-h-60 min-w-[150px] overflow-y-auto rounded-md border p-1 shadow-xl backdrop-blur-md ${
+                className={`absolute left-0 top-full z-30 mt-1 max-h-60 w-48 overflow-y-auto rounded border shadow-xl ${
                   isLight
-                    ? "border-[#ddd] bg-[#ffffff] text-[#121212]"
-                    : "border-line bg-paper/95 text-panel-ink"
+                    ? "border-[#d0d0c8] bg-[#ffffff] text-[#121212]"
+                    : "border-line bg-panel text-panel-ink shadow-black/60"
                 }`}
               >
                 {family.axes.length > 0 && (
                   <button
                     type="button"
                     onClick={handleSelectVariable}
-                    className={`flex w-full items-center justify-between rounded px-3 py-1.5 text-left text-[13px] transition-colors cursor-pointer ${
+                    className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[12px] font-bold transition-colors cursor-pointer ${
                       selectedStyleName === "Variable"
                         ? isLight
-                          ? "bg-[#eee] font-bold"
-                          : "bg-soft font-bold"
-                        : "hover:bg-line/40"
+                          ? "bg-[#eaeae6]"
+                          : "bg-soft"
+                        : isLight
+                        ? "hover:bg-[#f2f2ee]"
+                        : "hover:bg-row-hover"
                     }`}
                   >
-                    <span>Variable</span>
-                    {selectedStyleName === "Variable" && <CheckIcon className="h-3 w-3" />}
+                    <span>Variable (Đa trục)</span>
+                    <span className="text-[10px] opacity-60">
+                      {family.axes.map((a) => a.tag).join(", ")}
+                    </span>
                   </button>
                 )}
-                {family.styles.map((st) => (
+                {family.styles.map((style) => (
                   <button
-                    key={st.key}
+                    key={style.key}
                     type="button"
-                    onClick={() => handleSelectStyle(st)}
-                    className={`flex w-full items-center justify-between rounded px-3 py-1.5 text-left text-[13px] transition-colors cursor-pointer ${
-                      selectedStyleName === st.name && !st.italic
+                    onClick={() => handleSelectStyle(style)}
+                    className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer ${
+                      selectedStyleName === style.name
                         ? isLight
-                          ? "bg-[#eee] font-bold"
+                          ? "bg-[#eaeae6] font-bold"
                           : "bg-soft font-bold"
-                        : "hover:bg-line/40"
+                        : isLight
+                        ? "hover:bg-[#f2f2ee]"
+                        : "hover:bg-row-hover"
                     }`}
                   >
-                    <span className={st.italic ? "italic" : ""}>{st.name}</span>
-                    {selectedStyleName === st.name && <CheckIcon className="h-3 w-3" />}
+                    <span className={style.italic ? "italic" : ""}>
+                      {style.name}
+                    </span>
+                    <span className="font-mono text-[10px] opacity-60">
+                      {style.weight}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -304,11 +304,11 @@ export function FontshareCard({
           </div>
         </div>
 
-        {/* Center: Inline Hairline Controls (Weight, Size, Leading) — Desktop & Tablet */}
-        <div className="hidden md:flex items-center gap-x-5 gap-y-2">
+        {/* Center: Inline Sliders (Desktop & Tablet) */}
+        <div className="hidden md:flex items-center gap-4 lg:gap-6 text-[12px]">
           {/* Weight Slider */}
-          <div className="flex items-center gap-1.5">
-            <label htmlFor={`weight-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
+          <div className="flex items-center gap-2">
+            <label htmlFor={`weight-${family.slug}`} className="opacity-75 font-medium">
               Weight
             </label>
             <input
@@ -325,8 +325,8 @@ export function FontshareCard({
           </div>
 
           {/* Size Slider */}
-          <div className="flex items-center gap-1.5">
-            <label htmlFor={`size-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
+          <div className="flex items-center gap-2">
+            <label htmlFor={`size-${family.slug}`} className="opacity-75 font-medium">
               Size
             </label>
             <input
@@ -336,15 +336,18 @@ export function FontshareCard({
               max={144}
               step={2}
               value={size}
-              onChange={(e) => setSize(Number(e.target.value))}
+              onChange={(e) => {
+                setSize(Number(e.target.value));
+                setIsCustomized(true);
+              }}
               className="range w-16 sm:w-20 cursor-pointer"
             />
-            <span className="font-mono text-[11px] opacity-75 min-w-[32px] text-right">{size}px</span>
+            <span className="font-mono text-[11px] opacity-75 min-w-[34px] text-right">{size}px</span>
           </div>
 
-          {/* Leading Slider */}
-          <div className="flex items-center gap-1.5">
-            <label htmlFor={`leading-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
+          {/* Line-height / Leading Slider */}
+          <div className="flex items-center gap-2">
+            <label htmlFor={`leading-${family.slug}`} className="opacity-75 font-medium">
               Leading
             </label>
             <input
@@ -685,4 +688,4 @@ export function FontshareCard({
       )}
     </div>
   );
-}
+});

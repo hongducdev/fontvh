@@ -557,6 +557,17 @@ html[data-theme="light"] {
     mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
   }
+
+  /* Vercel Best Practice (rendering-content-visibility): Defer offscreen rendering */
+  .cv-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 320px;
+  }
+
+  .cv-glyph-grid {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 180px;
+  }
 }
 
 /* Native View Transitions API for modern browsers */
