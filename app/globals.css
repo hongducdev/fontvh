@@ -1,100 +1,20 @@
 @import "tailwindcss";
 
-:root {
-  /* Dark mode (Fontshare: near black, 1px faint hair lines) */
-  --paper: #10100e;
-  --panel: #161614;
-  --soft: #1d1d1a;
-  --line: #262622;
-  --faint: #3a3a33;
-  --muted: #8a8a7f;
-  --ink: #ffffe3;
-  --cream: #ffffe3;
-
-  --panel-ink: #ffffe3;
-  --panel-muted: #8a8a7f;
-  --panel-line: #262622;
-  --row-hover: #191916;
-
-  --tab-active-bg: #ffffe3;
-  --tab-active-ink: #10100e;
-  --tab-active-muted: #6b6b55;
-
-  --solid-bg: #ffffe3;
-  --solid-ink: #10100e;
-  --solid-hover-bg: #eaeacb;
-  --solid-hover-ink: #10100e;
-
-  --selection-bg: #ffffe3;
-  --selection-ink: #10100e;
-
-  --code-bg: #141412;
-  --code-header: #1a1a17;
-  --code-border: #262622;
-  --code-line-num: #55554c;
-  --code-comment: #707065;
-  --code-string: #d4a76a;
-  --code-keyword: #e07a5f;
-  --code-property: #81b29a;
-  --code-value: #f2cc8f;
-  --code-function: #64b5f6;
-  --code-number: #e29578;
-  --code-tag: #e07a5f;
-  --code-attr: #81b29a;
-  --code-punct: #8a8a7f;
-}
-
-html[data-theme="light"] {
-  /* Light mode (warm cream paper, dark ink) */
-  --paper: #f7f6f0;
-  --panel: #efeee6;
-  --soft: #e5e3d7;
-  --line: #dedccf;
-  --faint: #c8c5b6;
-  --muted: #6d6b60;
-  --ink: #161513;
-  --cream: #161513;
-
-  --panel-ink: #161513;
-  --panel-muted: #6d6b60;
-  --panel-line: #dedccf;
-  --row-hover: #e8e6dc;
-
-  --tab-active-bg: #161513;
-  --tab-active-ink: #f7f6f0;
-  --tab-active-muted: #9b9889;
-
-  --solid-bg: #161513;
-  --solid-ink: #f7f6f0;
-  --solid-hover-bg: #2a2926;
-  --solid-hover-ink: #f7f6f0;
-
-  --selection-bg: #161513;
-  --selection-ink: #f7f6f0;
-
-  --code-bg: #eceae0;
-  --code-header: #e2dfd3;
-  --code-border: #dedccf;
-  --code-line-num: #9b9889;
-  --code-comment: #7d7a6e;
-  --code-string: #8a5a20;
-  --code-keyword: #a83a22;
-  --code-property: #2d6a4f;
-  --code-value: #9c6615;
-  --code-function: #1d6fa5;
-  --code-number: #b05020;
-  --code-tag: #a83a22;
-  --code-attr: #2d6a4f;
-  --code-punct: #6d6b60;
-}
-
 @theme {
   --color-paper: var(--paper);
-  --color-soft: var(--soft);
-  --color-line: var(--line);
-  --color-faint: var(--faint);
-  --color-muted: var(--muted);
   --color-ink: var(--ink);
+  --color-line: var(--line);
+  --color-line-accent: var(--line-accent);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-soft: var(--soft);
+  --color-selection-bg: var(--selection-bg);
+  --color-selection-ink: var(--selection-ink);
+
+  --color-tab-active-bg: var(--tab-active-bg);
+  --color-tab-active-ink: var(--tab-active-ink);
+  --color-tab-active-muted: var(--tab-active-muted);
+
   --color-solid-bg: var(--solid-bg);
   --color-solid-ink: var(--solid-ink);
   --color-solid-hover-bg: var(--solid-hover-bg);
@@ -143,12 +63,103 @@ html[data-theme="light"] {
   --text-3xl--line-height: 4.25rem;
 }
 
+:root {
+  /* Default: Dark theme matching fontshare.com */
+  --paper: #000000;
+  --ink: #ffffff;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-accent: rgba(255, 255, 255, 0.22);
+  --muted: #888888;
+  --faint: #444444;
+  --soft: rgba(255, 255, 255, 0.05);
+  --selection-bg: #ffffff;
+  --selection-ink: #000000;
+
+  --tab-active-bg: #ffffff;
+  --tab-active-ink: #000000;
+  --tab-active-muted: #666666;
+
+  --solid-bg: #ffffff;
+  --solid-ink: #000000;
+  --solid-hover-bg: #e5e5e5;
+  --solid-hover-ink: #000000;
+
+  /* Font Card Panel colors (Dark theme) */
+  --panel: #0d0d0d;
+  --panel-ink: #ffffff;
+  --panel-muted: #888888;
+  --panel-line: rgba(255, 255, 255, 0.12);
+  --row-hover: rgba(255, 255, 255, 0.03);
+
+  /* VSCode Dark Modern Syntax Theme */
+  --code-bg: #1e1e1e;
+  --code-header: #252526;
+  --code-border: #333333;
+  --code-line-num: #858585;
+  --code-comment: #6a9955;
+  --code-string: #ce9178;
+  --code-keyword: #569cd6;
+  --code-property: #9cdcfe;
+  --code-value: #b5cea8;
+  --code-function: #dcdcaa;
+  --code-number: #b5cea8;
+  --code-tag: #4ec9b0;
+  --code-attr: #9cdcfe;
+  --code-punct: #d4d4d4;
+}
+
+html[data-theme="light"] {
+  --paper: #ffffff;
+  --ink: #000000;
+  --line: rgba(0, 0, 0, 0.1);
+  --line-accent: rgba(0, 0, 0, 0.2);
+  --muted: #666666;
+  --faint: #cccccc;
+  --soft: rgba(0, 0, 0, 0.04);
+  --selection-bg: #000000;
+  --selection-ink: #ffffff;
+
+  --tab-active-bg: #000000;
+  --tab-active-ink: #ffffff;
+  --tab-active-muted: #999999;
+
+  --solid-bg: #000000;
+  --solid-ink: #ffffff;
+  --solid-hover-bg: #222222;
+  --solid-hover-ink: #ffffff;
+
+  /* Font Card Panel colors (Light theme) */
+  --panel: #fafafa;
+  --panel-ink: #000000;
+  --panel-muted: #666666;
+  --panel-line: rgba(0, 0, 0, 0.08);
+  --row-hover: rgba(0, 0, 0, 0.02);
+
+  /* VSCode Light Modern Syntax Theme */
+  --code-bg: #ffffff;
+  --code-header: #f3f3f3;
+  --code-border: #e5e5e5;
+  --code-line-num: #8e8e8e;
+  --code-comment: #008000;
+  --code-string: #a31515;
+  --code-keyword: #0000ff;
+  --code-property: #001080;
+  --code-value: #098658;
+  --code-function: #795e26;
+  --code-number: #098658;
+  --code-tag: #800000;
+  --code-attr: #e50000;
+  --code-punct: #000000;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     background: var(--paper);
     color-scheme: dark;
+    /* Prevent unwanted horizontal viewport scrolling on mobile */
+    overflow-x: hidden;
   }
 
   html[data-theme="light"] {
@@ -161,6 +172,8 @@ html[data-theme="light"] {
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.5;
+    overflow-x: hidden;
+    min-height: 100dvh;
   }
 
   ::selection {
@@ -176,6 +189,85 @@ html[data-theme="light"] {
   input[type="search"]::-webkit-search-cancel-button {
     filter: grayscale(1);
   }
+
+  /* Global and Container Scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  html[data-theme="light"] * {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  html[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.18);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.35);
+  }
+
+  html[data-theme="light"] ::-webkit-scrollbar-thumb:active {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Native Select & Option Base Styling */
+  select {
+    color-scheme: dark;
+    background-color: var(--panel);
+    color: var(--panel-ink);
+    border: 1px solid var(--line);
+    font-family: inherit;
+  }
+
+  html[data-theme="light"] select {
+    color-scheme: light;
+    background-color: var(--panel);
+    color: var(--panel-ink);
+  }
+
+  select option,
+  select optgroup {
+    background-color: var(--panel);
+    color: var(--panel-ink);
+  }
+
+  html[data-theme="light"] select option,
+  html[data-theme="light"] select optgroup {
+    background-color: var(--panel);
+    color: var(--panel-ink);
+  }
 }
 
 @layer components {
@@ -183,7 +275,13 @@ html[data-theme="light"] {
     width: 100%;
     max-width: 2000px;
     margin-inline: auto;
-    padding-inline: 20px;
+    padding-inline: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .shell {
+      padding-inline: 24px;
+    }
   }
 
   @media (min-width: 768px) {
@@ -208,7 +306,8 @@ html[data-theme="light"] {
     font-size: 1rem;
     font-weight: 500;
     line-height: 1.5rem;
-    transition: background-color 150ms ease, color 150ms ease;
+    transition: background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      color 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .nav-tab:hover {
@@ -234,6 +333,7 @@ html[data-theme="light"] {
     line-height: 1.25rem;
     font-weight: 500;
     color: var(--muted);
+    transition: color 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .nav-tab[data-active="true"] .nav-count {
@@ -247,17 +347,32 @@ html[data-theme="light"] {
     justify-content: center;
     gap: 8px;
     border: 1px solid currentColor;
-    padding: 12px 20px;
+    padding: 10px 18px;
     font-size: 0.875rem;
     line-height: 1.25rem;
     font-weight: 700;
     text-align: center;
-    transition: background-color 150ms ease, color 150ms ease,
-      border-color 150ms ease;
+    transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (min-width: 640px) {
+    .btn,
+    .btn-solid {
+      padding: 12px 20px;
+    }
   }
 
   .btn:hover {
     background: var(--soft);
+  }
+
+  .btn:active,
+  .btn-solid:active {
+    transform: scale(0.98);
   }
 
   .btn-solid {
@@ -276,7 +391,7 @@ html[data-theme="light"] {
     text-decoration: underline;
     text-underline-offset: 4px;
     text-decoration-thickness: 1px;
-    transition: color 150ms ease;
+    transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .link-underline:hover {
@@ -292,7 +407,7 @@ html[data-theme="light"] {
     font-size: 0.875rem;
     line-height: 1.25rem;
     outline: none;
-    transition: border-color 150ms ease;
+    transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .field::placeholder {
@@ -312,12 +427,18 @@ html[data-theme="light"] {
     line-height: 1.25rem;
     color: var(--muted);
     white-space: nowrap;
-    transition: color 150ms ease, border-color 150ms ease;
+    transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .chip:hover {
     color: var(--ink);
     border-bottom-color: var(--line);
+  }
+
+  .chip:active {
+    transform: scale(0.97);
   }
 
   .chip[data-active="true"] {
@@ -326,7 +447,7 @@ html[data-theme="light"] {
     font-weight: 700;
   }
 
-  /* 1px hairline slider, round ink thumb */
+  /* 1px hairline slider, round ink thumb with smooth hover growth */
   .range {
     width: 100%;
     height: 16px;
@@ -334,6 +455,7 @@ html[data-theme="light"] {
     -webkit-appearance: none;
     background: transparent;
     cursor: pointer;
+    touch-action: pan-y;
   }
 
   .range::-webkit-slider-runnable-track {
@@ -344,12 +466,21 @@ html[data-theme="light"] {
   .range::-webkit-slider-thumb {
     appearance: none;
     -webkit-appearance: none;
-    width: 11px;
-    height: 11px;
-    margin-top: -5px;
+    width: 13px;
+    height: 13px;
+    margin-top: -6px;
     border: 0;
     border-radius: 9999px;
     background: var(--ink);
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+  }
+
+  .range:hover::-webkit-slider-thumb {
+    transform: scale(1.35);
+  }
+
+  .range:active::-webkit-slider-thumb {
+    transform: scale(1.15);
   }
 
   .range::-moz-range-track {
@@ -358,15 +489,123 @@ html[data-theme="light"] {
   }
 
   .range::-moz-range-thumb {
-    width: 11px;
-    height: 11px;
+    width: 13px;
+    height: 13px;
     border: 0;
     border-radius: 9999px;
     background: var(--ink);
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+  }
+
+  .range:hover::-moz-range-thumb {
+    transform: scale(1.35);
+  }
+
+  .range:active::-moz-range-thumb {
+    transform: scale(1.15);
   }
 
   .range:focus-visible {
     outline-offset: 6px;
+  }
+
+  /* Font Card Hover Transitions */
+  .card-hover-smooth {
+    transition: background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-hover-smooth:hover {
+    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Scrollbar utilities */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-none::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none,
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Fade masks for horizontal scrolling tabs/pills on mobile */
+  .mask-fade-right {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
+  .mask-fade-edges {
+    mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+  }
+}
+
+/* Native View Transitions API for modern browsers */
+/* Gentle, soft fade when switching Dark / Light theme */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    color 260ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    fill 260ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    stroke 260ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 300ms cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+  transition-delay: 0s !important;
+}
+
+::view-transition {
+  background-color: var(--paper);
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 160ms cubic-bezier(0.2, 0, 0.8, 1) both vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 200ms cubic-bezier(0.16, 1, 0.3, 1) both vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

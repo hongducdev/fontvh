@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import "./font-faces.css";
 import { SiteNav } from "@/components/SiteNav";
+import { PageProgress } from "@/components/PageProgress";
 import { families, licenseTypes } from "@/lib/catalog";
 import { pairings } from "@/lib/pairings";
+import "./globals.css";
+import "./font-faces.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,13 +50,18 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-dvh flex-col font-sans">
+      <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("fontvh-theme")==="light"){document.documentElement.dataset.theme="light"}}catch(e){}`,
+            __html: `try{const t=localStorage.getItem("fontvh-theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t}}catch(e){}`,
           }}
         />
-        <header className="sticky top-0 z-40 border-b border-line bg-paper md:static">
+      </head>
+      <body className="flex min-h-dvh flex-col font-sans">
+        <Suspense fallback={null}>
+          <PageProgress />
+        </Suspense>
+        <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-md supports-[backdrop-filter]:bg-paper/85 transition-colors md:static">
           <div className="shell">
             <div className="grid h-16 grid-cols-[1fr_auto] items-center md:h-40 md:grid-cols-8 md:items-stretch">
               <Link
