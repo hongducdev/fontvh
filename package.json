@@ -7,7 +7,8 @@
     "catalog": "node scripts/build-catalog.mjs",
     "dev": "node scripts/build-catalog.mjs && next dev",
     "build": "node scripts/build-catalog.mjs && next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --experimental-strip-types --test tests/catalog.test.mjs tests/diacritics.test.ts tests/pairings.test.ts tests/favorites.test.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3",
