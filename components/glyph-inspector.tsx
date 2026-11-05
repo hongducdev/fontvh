@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import type { FontMetrics, FontStyle } from "@/lib/types";
-import { ChevronDownIcon } from "./icons";
+import { CustomSelect } from "./custom-select";
 
 const UPPERCASE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const LOWERCASE_CHARS = "abcdefghijklmnopqrstuvwxyz".split("");
@@ -214,6 +214,7 @@ interface Props {
   glyphsCount: number;
   styles: FontStyle[];
   metrics?: FontMetrics;
+  isTabActive?: boolean;
 }
 
 export function GlyphInspector({
@@ -221,6 +222,7 @@ export function GlyphInspector({
   glyphsCount,
   styles,
   metrics,
+  isTabActive = true,
 }: Props) {
   const [selectedChar, setSelectedChar] = useState("R");
   const [selectedStyleKey, setSelectedStyleKey] = useState<string>(
@@ -335,7 +337,7 @@ export function GlyphInspector({
 
   // ─────────────────────────────────────────────────────────────
   // TYPOGRAPHY METRICS & DIACRITICS HEADROOM CALCULATION
-  // Chống cắt dấu kép hoa tiếng Việt (Ắ, Ấ, Ế, Ỗ, Ớ, Ứ...)
+  // Chống cắt dấu kép hoa tiếng Việt (Ắ, Ấ, Ế, Ố, Ớ, Ứ...)
   // ─────────────────────────────────────────────────────────────
   const rawDescent = metrics?.descent ?? -211;
   const descent = rawDescent > 0 ? -rawDescent : rawDescent; // Always negative, e.g. -265
@@ -453,7 +455,19 @@ export function GlyphInspector({
               <span className="font-mono text-muted font-medium">{xHeight}</span>
             </div>
 
-            {/* SVG Glyph aligned to Real Baseline */}
+            {/* Metric: Baseline (Alphabetic = 0) */}
+            <div
+              className="absolute left-6 right-6 flex items-center justify-between text-[11px] font-bold text-ink -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
+              style={{ top: `${baselinePct}%` }}
+            >
+              <span className="font-mono tracking-wider uppercase font-bold text-ink">
+                Baseline
+              </span>
+              <div className="mx-3 flex-1 border-b border-ink/40" />
+              <span className="font-mono font-bold text-ink">0</span>
+            </div>
+
+            {/* Real SVG Glyph Rendered Exactly on the Baseline */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
               aria-hidden="true"
@@ -469,24 +483,12 @@ export function GlyphInspector({
                 fontStyle={isItalic ? "italic" : "normal"}
                 fill={renderMode === "solid" ? "currentColor" : "none"}
                 stroke={renderMode === "outlines" ? "currentColor" : "none"}
-                strokeWidth={renderMode === "outlines" ? "1.5" : "0"}
+                strokeWidth={renderMode === "outlines" ? Math.max(1, Math.round(computedFontSize / 200)) : 0}
                 className="text-panel-ink transition-all duration-200"
               >
                 {selectedChar}
               </text>
             </svg>
-
-            {/* Metric: Baseline */}
-            <div
-              className="absolute left-6 right-6 flex items-center justify-between text-[11px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
-              style={{ top: `${baselinePct}%` }}
-            >
-              <span className="font-mono tracking-wider uppercase text-muted font-medium">
-                Baseline
-              </span>
-              <div className="mx-3 flex-1 border-b border-muted/50 border-dashed" />
-              <span className="font-mono text-muted font-medium">0</span>
-            </div>
 
             {/* Metric: Descender */}
             <div
@@ -508,21 +510,16 @@ export function GlyphInspector({
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line/60 pb-3 text-[14px]">
             {/* Style Selector */}
             {styles.length > 0 && (
-              <div className="relative flex items-center gap-1.5">
-                <select
-                  aria-label="Chọn kiểu chữ hiển thị"
-                  value={selectedStyleKey}
-                  onChange={(e) => setSelectedStyleKey(e.target.value)}
-                  className="appearance-none bg-transparent pr-5 text-[14px] font-bold text-ink outline-none cursor-pointer"
-                >
-                  {styles.map((s) => (
-                    <option key={s.key} value={s.key} className="bg-panel text-panel-ink">
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDownIcon className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
-              </div>
+              <CustomSelect
+                aria-label="Chọn kiểu chữ hiển thị"
+                value={selectedStyleKey}
+                onChange={setSelectedStyleKey}
+                options={styles.map((s) => ({
+                  value: s.key,
+                  label: s.name,
+                }))}
+                size="sm"
+              />
             )}
 
             {/* Basic Set | Full Set Toggle */}
@@ -678,7 +675,8 @@ export function GlyphInspector({
       </div>
 
       {/* Mobile Sticky Quick Preview Bar */}
-      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
+      {isTabActive && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
         <div className="flex items-center gap-3">
           <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
             {selectedChar}
@@ -696,6 +694,7 @@ export function GlyphInspector({
           Xem metric ↑
         </button>
       </div>
+      )}
     </section>
   );
 }

@@ -8,16 +8,18 @@ import {
   STRESS_TEST_CASES,
   type DiacriticCharInfo,
 } from "@/lib/vietnamese-diacritics";
-import { ChevronDownIcon, CopyIcon, CheckIcon } from "./icons";
+import { CopyIcon, CheckIcon } from "./icons";
+import { CustomSelect } from "./custom-select";
 
 interface Props {
   slug: string;
   name: string;
   styles: FontStyle[];
   metrics?: FontMetrics;
+  isTabActive?: boolean;
 }
 
-export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
+export function DiacriticsInspector({ slug, name, styles, metrics, isTabActive = true }: Props) {
   // Styles selector
   const [selectedStyleKey, setSelectedStyleKey] = useState<string>(
     styles[0]?.key ?? "regular"
@@ -27,7 +29,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
   const activeWeight = activeStyle?.weight ?? 400;
   const isItalic = activeStyle?.italic ?? false;
 
-  // Selected character from matrix (default: Ở / ở - the classic acid test)
+  // Selected character from matrix (default: Ợ / ợ - the classic acid test)
   const defaultChar = VIETNAMESE_DIACRITIC_MATRIX.find(
     (r) => r.id === "o-horn"
   )?.chars.find((c) => c.tone === "hook") ?? VIETNAMESE_DIACRITIC_MATRIX[0].chars[1];
@@ -75,7 +77,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
   const ascender = metrics?.ascent ?? 1000;
   const unitsPerEm = metrics?.unitsPerEm ?? 1000;
 
-  // Maximum diacritic height calculation (accommodating Vietnamese double-stacked marks: Ắ, Ấ, Ế, Ố, Ở...)
+  // Maximum diacritic height calculation (accommodating Vietnamese double-stacked marks: Ắ, Ấ, Ế, Ố, Ớ...)
   const maxAccentHeight = Math.max(ascender, Math.round(capHeight * 1.38));
   const span = maxAccentHeight + Math.abs(descent);
   const padTop = Math.round(span * 0.16);
@@ -123,6 +125,10 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
       ? selectedChar.upper
       : selectedChar.lower;
 
+  const scrollToZoom = () => {
+    canvasContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <section id="diacritics" className="shell mt-16 scroll-mt-20">
       {/* 1. HEADER SECTION */}
@@ -134,41 +140,35 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
             </span>
             <span className="text-[12px] text-muted">134 Glyphs có dấu · 6 Thanh điệu</span>
           </div>
-          <h2 className="text-[28px] font-bold tracking-tight md:text-[34px]">
+          <h2 className="text-[26px] sm:text-[28px] font-bold tracking-tight md:text-[34px]">
             Bản Soi Dấu & Neo Vị Trí (Diacritics Inspector)
           </h2>
-          <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted md:text-[15px]">
+          <p className="mt-1.5 max-w-2xl text-[13px] sm:text-[14px] leading-relaxed text-muted md:text-[15px]">
             Kiểm tra tỷ lệ độ dày nét, khoảng hở chống dính (collision), độ cao của dấu mũ (â, ê, ô), dấu móc (ơ, ư) và dấu thanh trên font <strong>{name}</strong>.
           </p>
         </div>
 
         {/* Global Toolbar */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           {/* Style Selector */}
-          <div className="relative">
-            <select
-              aria-label="Chọn kiểu chữ"
-              value={selectedStyleKey}
-              onChange={(e) => setSelectedStyleKey(e.target.value)}
-              className="appearance-none rounded border border-line bg-paper py-1.5 pl-3 pr-8 text-[13px] font-medium text-ink focus:border-ink focus:outline-none cursor-pointer"
-            >
-              {styles.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.name} ({s.weight}{s.italic ? " Italic" : ""})
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
-              <ChevronDownIcon />
-            </div>
-          </div>
+          <CustomSelect
+            aria-label="Chọn kiểu chữ"
+            value={selectedStyleKey}
+            onChange={setSelectedStyleKey}
+            options={styles.map((s) => ({
+              value: s.key,
+              label: s.name,
+              sublabel: `${s.weight}${s.italic ? " Italic" : ""}`,
+            }))}
+            size="sm"
+          />
 
           {/* Case switch */}
           <div className="flex items-center rounded border border-line bg-panel p-0.5 text-[12px]">
             <button
               type="button"
               onClick={() => setDisplayCase("both")}
-              className={`rounded px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
                 displayCase === "both" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
               }`}
             >
@@ -177,7 +177,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
             <button
               type="button"
               onClick={() => setDisplayCase("upper")}
-              className={`rounded px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
                 displayCase === "upper" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
               }`}
             >
@@ -186,7 +186,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
             <button
               type="button"
               onClick={() => setDisplayCase("lower")}
-              className={`rounded px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+              className={`rounded px-2 sm:px-2.5 py-1 font-medium transition-colors cursor-pointer ${
                 displayCase === "lower" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
               }`}
             >
@@ -226,7 +226,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
           {/* Typographic Zoom Viewport */}
           <div
             ref={canvasContainerRef}
-            className="relative mt-3 flex min-h-[380px] md:min-h-[460px] overflow-hidden border border-line bg-panel select-none"
+            className="relative mt-3 flex min-h-[300px] xs:min-h-[360px] md:min-h-[440px] overflow-hidden border border-line bg-panel select-none"
           >
             {/* Typographic Guidelines */}
             {showGuides && (
@@ -321,7 +321,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
           <div className="mt-3 rounded border border-line bg-paper p-4 text-[13px]">
             <div className="flex items-center justify-between pb-3 border-b border-line/60">
               <div>
-                <h4 className="font-bold text-ink text-[15px]">
+                <h4 className="font-bold text-ink text-[14px] sm:text-[15px]">
                   {selectedChar.upperName} / {selectedChar.lowerName}
                 </h4>
                 <p className="text-[12px] text-muted mt-0.5">
@@ -383,16 +383,19 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
 
         {/* RIGHT COLUMN: DIACRITIC MATRIX TABLE */}
         <div className="lg:col-span-7">
-          <div className="border border-line bg-paper overflow-x-auto">
-            <table className="w-full text-center border-collapse min-w-[580px]">
+          <div className="flex items-center justify-between text-[12px] text-muted mb-2 lg:hidden">
+            <span>← Vuốt ngang để xem đủ 6 thanh điệu →</span>
+          </div>
+          <div className="border border-line bg-paper overflow-x-auto no-scrollbar">
+            <table className="w-full text-center border-collapse min-w-[560px]">
               {/* Matrix Head: 6 Tones */}
               <thead>
                 <tr className="border-b border-line bg-panel text-[12px] text-muted">
-                  <th className="py-2.5 px-3 text-left font-semibold text-ink border-r border-line w-28">
+                  <th className="sticky left-0 z-10 bg-panel py-2.5 px-3 text-left font-semibold text-ink border-r border-line w-28 shadow-[1px_0_0_0_var(--line)]">
                     Nguyên âm
                   </th>
                   {VIETNAMESE_TONES.map((t) => (
-                    <th key={t.id} className="py-2.5 px-2 font-medium">
+                    <th key={t.id} className="py-2.5 px-2 font-medium min-w-[65px]">
                       <div className="flex flex-col items-center">
                         <span className="text-ink font-semibold">{t.name}</span>
                         <span className="text-[10px] text-muted font-mono">{t.symbol}</span>
@@ -402,21 +405,21 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
                 </tr>
               </thead>
 
-              {/* Matrix Body: Exact 7-column layout across every row */}
+              {/* Matrix Body: Exact 7-column layout with sticky first column */}
               <tbody className="divide-y divide-line/60 text-[14px]">
                 {VIETNAMESE_DIACRITIC_MATRIX.map((row) => (
                   <tr key={row.id} className="hover:bg-panel/40 transition-colors">
-                    {/* Row Label */}
-                    <td className="py-3 px-3 text-left border-r border-line font-medium text-[13px] bg-panel/20">
+                    {/* Row Label (Sticky on horizontal scroll) */}
+                    <td className="sticky left-0 z-10 bg-panel py-3 px-3 text-left border-r border-line font-medium text-[13px] shadow-[1px_0_0_0_var(--line)]">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-ink">{row.baseChar}</span>
-                        <span className="text-[11px] text-muted truncate max-w-[90px]" title={row.name}>
+                        <span className="text-[11px] text-muted truncate max-w-[80px]" title={row.name}>
                           {row.accentType === "base" ? "" : `(${row.accentType})`}
                         </span>
                       </div>
                     </td>
 
-                    {/* 6 Tone Cells (guaranteed 6 cells per row) */}
+                    {/* 6 Tone Cells */}
                     {VIETNAMESE_TONES.map((t) => {
                       const charItem = row.chars.find((c) => c.tone === t.id);
 
@@ -452,7 +455,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
                             }`}
                           >
                             <span
-                              className="text-[20px] md:text-[22px] leading-tight"
+                              className="text-[19px] sm:text-[20px] md:text-[22px] leading-tight"
                               style={fontStyle}
                             >
                               {charToRender}
@@ -479,10 +482,10 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
             <span className="inline-block rounded bg-panel px-2 py-0.5 text-[11px] font-semibold text-muted">
               Stress Test Cụm Từ
             </span>
-            <h3 className="mt-1.5 text-[22px] font-bold tracking-tight md:text-[26px]">
+            <h3 className="mt-1.5 text-[20px] sm:text-[22px] font-bold tracking-tight md:text-[26px]">
               Thử Nghiệm Cụm Từ & Câu Dấu Nhạy Cảm
             </h3>
-            <p className="mt-1 text-[14px] text-muted">
+            <p className="mt-1 text-[13px] sm:text-[14px] text-muted">
               Kiểm tra nhịp điệu (rhythm), khoảng cách từ (kerning), và độ cân đối của dấu trong câu dài.
             </p>
           </div>
@@ -497,17 +500,17 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
               value={stressFontSize}
               onChange={(e) => setStressFontSize(Number(e.target.value))}
               aria-label="Kích thước chữ stress test"
-              className="w-32 accent-ink cursor-pointer"
+              className="w-28 sm:w-32 accent-ink cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Category switcher */}
-        <div className="mt-6 flex flex-wrap gap-2">
+        {/* Category switcher (Horizontal scrollable on mobile) */}
+        <div className="mt-6 flex items-center gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1">
           <button
             type="button"
             onClick={() => setActiveCategory("all")}
-            className={`rounded-full px-3.5 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
+            className={`shrink-0 rounded-full px-3.5 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
               activeCategory === "all"
                 ? "bg-ink text-paper"
                 : "border border-line bg-paper text-muted hover:text-ink"
@@ -520,7 +523,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
               key={c.id}
               type="button"
               onClick={() => setActiveCategory(c.id)}
-              className={`rounded-full px-3.5 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
+              className={`shrink-0 rounded-full px-3.5 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
                 activeCategory === c.id
                   ? "bg-ink text-paper"
                   : "border border-line bg-paper text-muted hover:text-ink"
@@ -534,24 +537,24 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
         {/* Word Chips and Sample Sentences */}
         <div className="mt-8 space-y-6">
           {filteredStressCases.map((testCase) => (
-            <div key={testCase.id} className="rounded border border-line bg-paper p-5">
+            <div key={testCase.id} className="rounded border border-line bg-paper p-4 sm:p-5">
               <div className="flex items-center justify-between border-b border-line/60 pb-2 mb-4">
                 <div>
-                  <h4 className="font-bold text-ink text-[15px]">{testCase.category}</h4>
+                  <h4 className="font-bold text-ink text-[14px] sm:text-[15px]">{testCase.category}</h4>
                   <p className="text-[12px] text-muted">{testCase.description}</p>
                 </div>
               </div>
 
               {/* Word Chips */}
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {testCase.words.map((word) => (
                   <button
                     key={word}
                     type="button"
                     onClick={() => setCustomText(word)}
                     title="Bấm để đưa vào ô gõ thử nghiệm"
-                    className="rounded border border-line bg-panel/60 px-3 py-1.5 text-panel-ink hover:border-ink hover:bg-paper transition-all cursor-pointer"
-                    style={{ ...fontStyle, fontSize: `${Math.min(stressFontSize, 32)}px` }}
+                    className="rounded border border-line bg-panel/60 px-2.5 sm:px-3 py-1.5 text-panel-ink hover:border-ink hover:bg-paper transition-all cursor-pointer"
+                    style={{ ...fontStyle, fontSize: `${Math.min(stressFontSize, 28)}px` }}
                   >
                     {word}
                   </button>
@@ -559,7 +562,7 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
               </div>
 
               {/* Sample Sentence */}
-              <div className="mt-4 rounded bg-panel p-3.5 border border-line/40">
+              <div className="mt-4 rounded bg-panel p-3 sm:p-3.5 border border-line/40">
                 <span className="text-[10px] uppercase font-mono text-muted block mb-1">
                   Đoạn câu ngữ cảnh:
                 </span>
@@ -574,34 +577,48 @@ export function DiacriticsInspector({ slug, name, styles, metrics }: Props) {
           ))}
         </div>
 
-        {/* Interactive Custom Text Box */}
-        <div className="mt-8 rounded border border-line bg-panel p-5">
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="custom-diacritic-input" className="text-[13px] font-semibold text-ink">
-              Gõ tự do kiểm tra dấu tiếng Việt:
-            </label>
-            <span className="text-[11px] text-muted">Hỗ trợ gõ bộ gõ Unikey / OpenKey / EVKey</span>
-          </div>
-          <input
-            id="custom-diacritic-input"
-            type="text"
+        {/* Custom Sandbox Textarea */}
+        <div className="mt-8 rounded border border-line bg-paper p-4 sm:p-5">
+          <label htmlFor="custom-stress-test" className="text-[12px] font-bold uppercase tracking-wider text-muted block mb-2">
+            Gõ Thử Tùy Biến (Live Typing Sandbox)
+          </label>
+          <textarea
+            id="custom-stress-test"
+            rows={2}
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
-            placeholder="Gõ từ hoặc câu tiếng Việt bạn muốn kiểm tra..."
-            className="w-full rounded border border-line bg-paper px-4 py-3 text-[15px] text-ink focus:border-ink focus:outline-none"
+            className="w-full bg-transparent outline-none text-panel-ink leading-relaxed resize-y border-b border-line pb-3 focus:border-ink"
+            style={{ ...fontStyle, fontSize: `${stressFontSize}px` }}
+            placeholder="Gõ chữ tiếng Việt bất kỳ có dấu..."
           />
-          {customText && (
-            <div className="mt-4 p-4 rounded bg-paper border border-line/60">
-              <p
-                className="text-panel-ink break-words leading-relaxed"
-                style={{ ...fontStyle, fontSize: `${stressFontSize}px` }}
-              >
-                {customText}
-              </p>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Mobile Sticky Quick Preview Bar */}
+      {isTabActive && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
+        <div className="flex items-center gap-3">
+          <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
+            {selectedChar.upper} {selectedChar.lower}
+          </span>
+          <div className="flex flex-col">
+            <span className="font-mono text-[12px] font-bold text-ink">
+              {selectedChar.lowerUnicode}
+            </span>
+            <span className="max-w-[140px] truncate text-[11px] text-muted">
+              {selectedChar.upperName}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={scrollToZoom}
+          className="chip text-[12px] font-medium text-ink cursor-pointer"
+        >
+          Xem metric ↑
+        </button>
+      </div>
+      )}
     </section>
   );
 }

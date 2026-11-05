@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import type { FontFamily } from "@/lib/types";
 import { FontshareCard } from "./FontshareCard";
@@ -11,6 +11,7 @@ import {
   DownloadIcon,
   XIcon,
 } from "./icons";
+import { CustomSelect } from "./custom-select";
 
 const PANGRAM_PRESETS = [
   { label: "Tên font", text: "" },
@@ -30,13 +31,14 @@ const normalize = (value: string) =>
   value
     .toLowerCase()
     .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[đĐ]/g, "d")
-    .trim();
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
 
 function formatBytes(bytes: number) {
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(0)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 type Props = {
@@ -56,6 +58,10 @@ export function FontsBrowser({
   initialVariable = false,
   initialVi = false,
 }: Props) {
+  const [isPending, startTransition] = useTransition();
+
+  // Instant input state for zero-latency typing
+  const [searchInputValue, setSearchInputValue] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
   const [text, setText] = useState("");
   const [size, setSize] = useState(88);
@@ -114,14 +120,56 @@ export function FontsBrowser({
     text !== "" ||
     size !== 88;
 
+  // React Transition helpers for buttery-smooth state updates
+  const handleSearchChange = (value: string) => {
+    setSearchInputValue(value);
+    startTransition(() => {
+      setQuery(value);
+    });
+  };
+
+  const handleClearSearch = () => {
+    setSearchInputValue("");
+    startTransition(() => {
+      setQuery("");
+    });
+  };
+
+  const handleCategorySelect = (cat: string) => {
+    startTransition(() => {
+      setCategory(cat);
+    });
+  };
+
+  const handleToggleVariable = () => {
+    startTransition(() => {
+      setOnlyVariable((prev) => !prev);
+    });
+  };
+
+  const handleToggleVietnamese = () => {
+    startTransition(() => {
+      setOnlyVietnamese((prev) => !prev);
+    });
+  };
+
+  const handleSortChange = (newSort: "default" | "name" | "styles") => {
+    startTransition(() => {
+      setSortBy(newSort);
+    });
+  };
+
   function resetAll() {
-    setQuery("");
-    setText("");
-    setSize(88);
-    setCategory("");
-    setOnlyVariable(false);
-    setOnlyVietnamese(false);
-    setSortBy("default");
+    setSearchInputValue("");
+    startTransition(() => {
+      setQuery("");
+      setText("");
+      setSize(88);
+      setCategory("");
+      setOnlyVariable(false);
+      setOnlyVietnamese(false);
+      setSortBy("default");
+    });
   }
 
   return (
@@ -129,9 +177,16 @@ export function FontsBrowser({
       {/* Page Title & Count */}
       <div className="flex items-baseline justify-between border-b border-line py-5">
         <h1 className="text-[14px] font-bold tracking-tight">Bộ font</h1>
-        <p className="micro">
-          {filtered.length} / {families.length} họ chữ
-        </p>
+        <div className="flex items-center gap-3">
+          {isPending && (
+            <span className="text-[12px] font-medium text-muted animate-pulse">
+              Đang lọc...
+            </span>
+          )}
+          <p className="micro">
+            {filtered.length} / {families.length} họ chữ
+          </p>
+        </div>
       </div>
 
       {/* Fontshare Signature Interactive Control Bar */}
@@ -139,24 +194,24 @@ export function FontsBrowser({
         {/* Row 1: Search & Custom Specimen Text Input */}
         <div className="grid grid-cols-1 border-b border-line md:grid-cols-12">
           {/* Search Input */}
-          <div className="flex items-center gap-3 border-b border-line py-4 md:col-span-4 md:border-b-0 md:border-r md:border-line md:pr-6">
-            <Magnifier className="text-muted" />
+          <div className="flex items-center gap-3 border-b border-line py-3.5 md:col-span-4 md:border-b-0 md:border-r md:border-line md:pr-6 md:py-4">
+            <Magnifier className="shrink-0 text-muted" />
             <label htmlFor="search-fonts" className="sr-only">
               Tìm theo tên, nhà thiết kế
             </label>
             <input
               id="search-fonts"
               type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Tìm theo tên, nhà thiết kế…"
               className="w-full bg-transparent text-[14px] leading-[20px] outline-none placeholder:text-muted focus-visible:ring-1 focus-visible:ring-ink"
             />
-            {query && (
+            {searchInputValue && (
               <button
                 type="button"
-                onClick={() => setQuery("")}
-                className="text-muted hover:text-ink cursor-pointer"
+                onClick={handleClearSearch}
+                className="flex h-7 w-7 items-center justify-center text-muted hover:text-ink cursor-pointer transition-colors"
                 aria-label="Xóa tìm kiếm"
               >
                 <XIcon className="h-4 w-4" />
@@ -165,8 +220,8 @@ export function FontsBrowser({
           </div>
 
           {/* Live Preview Text Input */}
-          <div className="flex items-center gap-3 py-4 md:col-span-8 md:pl-6">
-            <label htmlFor="custom-preview-text" className="micro shrink-0">
+          <div className="flex items-center gap-3 py-3.5 md:col-span-8 md:pl-6 md:py-4">
+            <label htmlFor="custom-preview-text" className="micro shrink-0 text-[13px] sm:text-[14px]">
               Chữ thử chung
             </label>
             <input
@@ -174,14 +229,14 @@ export function FontsBrowser({
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Nhập chữ thử cho tất cả font (hoặc bấm trực tiếp vào tên font bên dưới để gõ)…"
-              className="w-full bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-faint focus-visible:ring-1 focus-visible:ring-ink"
+              placeholder="Nhập chữ thử cho tất cả font…"
+              className="w-full bg-transparent text-[14px] sm:text-[15px] leading-[22px] outline-none placeholder:text-faint focus-visible:ring-1 focus-visible:ring-ink"
             />
             {text && (
               <button
                 type="button"
                 onClick={() => setText("")}
-                className="text-muted hover:text-ink cursor-pointer"
+                className="flex h-7 w-7 items-center justify-center text-muted hover:text-ink cursor-pointer transition-colors"
                 aria-label="Xóa nội dung thử"
               >
                 <XIcon className="h-4 w-4" />
@@ -191,16 +246,16 @@ export function FontsBrowser({
         </div>
 
         {/* Row 2: Pangrams & Font Size Slider + View Mode */}
-        <div className="grid grid-cols-1 items-center gap-4 py-4 md:grid-cols-12">
-          {/* Pangram Preset Pills */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 md:col-span-6">
-            <span className="micro mr-1">Mẫu câu:</span>
+        <div className="grid grid-cols-1 items-center gap-4 py-3.5 md:grid-cols-12 md:py-4">
+          {/* Pangram Preset Pills (Swipeable on mobile with smooth fade mask) */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1 md:pb-0 md:flex-wrap md:mask-none md:col-span-6">
+            <span className="micro mr-1 shrink-0 text-[12px] sm:text-[13px]">Mẫu câu:</span>
             {PANGRAM_PRESETS.map((p) => (
               <button
                 key={p.label}
                 type="button"
                 onClick={() => setText(p.text)}
-                className="chip text-[13px] cursor-pointer"
+                className="chip text-[12px] sm:text-[13px] shrink-0 cursor-pointer"
                 data-active={text === p.text || undefined}
               >
                 {p.label}
@@ -209,9 +264,9 @@ export function FontsBrowser({
           </div>
 
           {/* Font Size Slider & Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4 md:col-span-6 md:border-t-0 md:justify-end md:pt-0">
-            <div className="flex items-center gap-3">
-              <label htmlFor="font-size-slider" className="micro shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/60 pt-3 md:col-span-6 md:border-t-0 md:justify-end md:pt-0">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <label htmlFor="font-size-slider" className="micro shrink-0 text-[12px] sm:text-[13px]">
                 Cỡ chữ chung
               </label>
               <input
@@ -222,9 +277,9 @@ export function FontsBrowser({
                 step={2}
                 value={size}
                 onChange={(e) => setSize(Number(e.target.value))}
-                className="range w-24 sm:w-32 cursor-pointer"
+                className="range w-20 sm:w-32 cursor-pointer"
               />
-              <span className="min-w-[40px] text-right text-[14px] font-bold">
+              <span className="min-w-[36px] text-right font-mono text-[13px] sm:text-[14px] font-bold">
                 {size}px
               </span>
               <div className="hidden items-center gap-1.5 lg:flex">
@@ -243,16 +298,16 @@ export function FontsBrowser({
             </div>
 
             {/* View Mode Toggle: List vs Grid */}
-            <div className="flex items-center gap-1 border-l border-line pl-4">
+            <div className="flex items-center gap-1 border-l border-line pl-3">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
                 aria-label="Dạng danh sách (List view)"
                 title="Dạng danh sách"
-                className={`p-1.5 transition-colors cursor-pointer ${
+                className={`p-2 transition-all duration-200 cursor-pointer active:scale-95 ${
                   viewMode === "list"
                     ? "bg-solid-bg text-solid-ink"
-                    : "text-muted hover:text-ink"
+                    : "text-muted hover:text-ink hover:bg-soft/50"
                 }`}
               >
                 <ListIcon />
@@ -262,10 +317,10 @@ export function FontsBrowser({
                 onClick={() => setViewMode("grid")}
                 aria-label="Dạng lưới (Grid view)"
                 title="Dạng lưới"
-                className={`p-1.5 transition-colors cursor-pointer ${
+                className={`p-2 transition-all duration-200 cursor-pointer active:scale-95 ${
                   viewMode === "grid"
                     ? "bg-solid-bg text-solid-ink"
-                    : "text-muted hover:text-ink"
+                    : "text-muted hover:text-ink hover:bg-soft/50"
                 }`}
               >
                 <GridIcon />
@@ -275,13 +330,13 @@ export function FontsBrowser({
         </div>
 
         {/* Row 3: Categories & Feature Filters & Sorting */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line py-3 text-[14px]">
-          {/* Category Pills */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        <div className="flex flex-col gap-3 border-t border-line py-3 text-[13px] sm:text-[14px] md:flex-row md:items-center md:justify-between">
+          {/* Category Pills (Horizontal scrollable on mobile) */}
+          <div className="flex items-center gap-x-3 sm:gap-x-5 gap-y-1 overflow-x-auto no-scrollbar mask-fade-right pb-1 md:pb-0 md:flex-wrap md:mask-none">
             <button
               type="button"
-              onClick={() => setCategory("")}
-              className="chip font-medium cursor-pointer"
+              onClick={() => handleCategorySelect("")}
+              className="chip font-medium shrink-0 cursor-pointer"
               data-active={category === "" || undefined}
             >
               Tất cả
@@ -290,8 +345,8 @@ export function FontsBrowser({
               <button
                 key={cat}
                 type="button"
-                onClick={() => setCategory(cat)}
-                className="chip capitalize font-medium cursor-pointer"
+                onClick={() => handleCategorySelect(category === cat ? "" : cat)}
+                className="chip capitalize font-medium shrink-0 cursor-pointer"
                 data-active={category === cat || undefined}
               >
                 {cat}
@@ -300,165 +355,178 @@ export function FontsBrowser({
           </div>
 
           {/* Extra Filters & Sort & Reset */}
-          <div className="flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setOnlyVietnamese((prev) => !prev)}
-              className="chip cursor-pointer"
-              data-active={onlyVietnamese || undefined}
-            >
-              ✓ Đủ dấu tiếng Việt
-            </button>
-            <button
-              type="button"
-              onClick={() => setOnlyVariable((prev) => !prev)}
-              className="chip cursor-pointer"
-              data-active={onlyVariable || undefined}
-            >
-              Variable font
-            </button>
-
-            <select
-              value={sortBy}
-              onChange={(e) =>
-                setSortBy(e.target.value as "default" | "name" | "styles")
-              }
-              aria-label="Sắp xếp font"
-              className="bg-transparent text-[14px] font-medium text-muted outline-none hover:text-ink cursor-pointer"
-            >
-              <option value="default" className="bg-paper text-ink">
-                Sắp xếp: Mặc định
-              </option>
-              <option value="name" className="bg-paper text-ink">
-                Tên A → Z
-              </option>
-              <option value="styles" className="bg-paper text-ink">
-                Nhiều kiểu chữ nhất
-              </option>
-            </select>
-
-            {hasActiveFilters && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line/40 md:border-t-0 md:pt-0 md:justify-end">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
               <button
                 type="button"
-                onClick={resetAll}
-                className="link-underline text-[13px] text-muted hover:text-ink cursor-pointer"
+                onClick={handleToggleVietnamese}
+                className="chip cursor-pointer"
+                data-active={onlyVietnamese || undefined}
               >
-                Đặt lại bộ lọc
+                ✓ Đủ dấu tiếng Việt
               </button>
-            )}
+              <button
+                type="button"
+                onClick={handleToggleVariable}
+                className="chip cursor-pointer"
+                data-active={onlyVariable || undefined}
+              >
+                Variable font
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 ml-auto md:ml-0">
+              <CustomSelect
+                value={sortBy}
+                onChange={(val) =>
+                  handleSortChange(val as "default" | "name" | "styles")
+                }
+                aria-label="Sắp xếp font"
+                size="sm"
+                align="right"
+                options={[
+                  { value: "default", label: "Sắp xếp: Mặc định" },
+                  { value: "name", label: "Tên A → Z" },
+                  { value: "styles", label: "Nhiều kiểu chữ nhất" },
+                ]}
+              />
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  className="link-underline text-[12px] sm:text-[13px] text-muted hover:text-ink cursor-pointer"
+                >
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Font Display List or Grid */}
-      {filtered.length === 0 ? (
-        <div className="py-24 text-center">
-          <p className="text-[18px] font-bold">Không tìm thấy họ chữ phù hợp</p>
-          <p className="mt-2 text-[14px] text-muted">
-            Thử đổi từ khóa hoặc xóa bớt bộ lọc để duyệt thêm font.
-          </p>
-          <button
-            type="button"
-            onClick={resetAll}
-            className="btn-solid mt-6 text-[14px] cursor-pointer"
-          >
-            Xem tất cả {families.length} họ chữ
-          </button>
-        </div>
-      ) : viewMode === "list" ? (
-        /* LIST VIEW — Signature Fontshare typographic specimen rows */
-        <div className="divide-y divide-line border-b border-line">
-          {filtered.map((family) => (
-            <FontshareCard
-              key={family.slug}
-              family={family}
-              globalText={text}
-              globalSize={size}
-              onApplyToAll={(newText, newSize) => {
-                setText(newText);
-                setSize(newSize);
-              }}
-            />
-          ))}
-        </div>
-      ) : (
-        /* GRID VIEW — 2-column cards layout with consistent borders */
-        <div className="grid grid-cols-1 border-b border-line md:grid-cols-2">
-          {filtered.map((family, idx) => {
-            const previewStyle =
-              family.styles.find(
-                (s) => !s.italic && s.weight === family.preview.weight
-              ) ??
-              family.styles.find((s) => !s.italic) ??
-              family.styles[0];
-
-            return (
-              <div
+      {/* Font Family Cards Container */}
+      <div className="mt-8">
+        {filtered.length === 0 ? (
+          <div className="py-24 text-center">
+            <p className="text-[18px] font-bold">Không tìm thấy họ chữ phù hợp</p>
+            <p className="mt-2 text-[14px] text-muted">
+              Thử đổi từ khóa hoặc xóa bớt bộ lọc để duyệt thêm font.
+            </p>
+            <button
+              type="button"
+              onClick={resetAll}
+              className="btn-solid mt-6 text-[14px] cursor-pointer"
+            >
+              Xem tất cả {families.length} họ chữ
+            </button>
+          </div>
+        ) : viewMode === "list" ? (
+          /* LIST VIEW — Signature Fontshare typographic specimen rows */
+          <div className="divide-y divide-line border-b border-line">
+            {filtered.map((family) => (
+              <FontshareCard
                 key={family.slug}
-                className={`group flex flex-col justify-between bg-panel p-6 transition-colors hover:bg-row-hover md:p-8 border-b border-line ${
-                  idx % 2 === 1 ? "md:border-l md:border-line" : ""
-                }`}
-              >
-                <div>
-                  <div className="flex items-baseline justify-between text-[14px] leading-[20px]">
-                    <div className="flex items-baseline gap-3">
+                family={family}
+                globalText={text}
+                globalSize={size}
+                onApplyToAll={(newText, newSize) => {
+                  setText(newText);
+                  setSize(newSize);
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          /* GRID VIEW — Visual cards with font details */
+          <div className="grid grid-cols-1 gap-px border-b border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((family) => {
+              const defaultStyle =
+                family.styles.find(
+                  (s) => !s.italic && s.weight === family.preview.weight
+                ) ??
+                family.styles.find((s) => !s.italic) ??
+                family.styles[0];
+
+              return (
+                <div
+                  key={family.slug}
+                  className="group flex flex-col justify-between bg-panel p-6 card-hover-smooth"
+                >
+                  <div>
+                    <div className="flex items-baseline justify-between">
                       <Link
                         href={`/fonts/${family.slug}`}
-                        className="font-bold hover:underline text-panel-ink"
+                        className="text-[17px] font-bold tracking-tight text-panel-ink hover:underline"
                       >
                         {family.name}
                       </Link>
-                      <span className="text-panel-muted">
-                        {family.styles.length} styles
+                      <span className="text-[12px] text-panel-muted">
+                        {family.styles.length} kiểu
                       </span>
                     </div>
-                    <span className="text-[13px] capitalize text-panel-muted">
-                      {family.categories.join(", ")}
-                    </span>
-                  </div>
 
-                  <Link
-                    href={`/fonts/${family.slug}`}
-                    className="my-8 block min-h-[100px] overflow-hidden"
-                  >
-                    <p
-                      className="line-clamp-2 leading-[1.25] tracking-[-0.02em] text-panel-ink"
+                    <p className="mt-1 text-[13px] text-panel-muted">
+                      {family.designer}
+                    </p>
+
+                    {/* Specimen Preview */}
+                    <div
+                      className="my-8 overflow-hidden text-ellipsis whitespace-nowrap text-panel-ink"
                       style={{
-                        fontFamily: `'${family.slug}'`,
-                        fontSize: `clamp(28px, ${Math.min(size, 80)}px, 80px)`,
-                        fontWeight: previewStyle?.weight ?? 400,
-                        fontStyle: previewStyle?.italic ? "italic" : "normal",
+                        fontFamily: `'${family.slug}', ${
+                          family.categories.includes("serif")
+                            ? "serif"
+                            : family.categories.includes("monospace") ||
+                              family.categories.includes("mono")
+                            ? "monospace"
+                            : "sans-serif"
+                        }`,
+                        fontSize: "clamp(24px, 8vw, 36px)",
+                        lineHeight: 1.15,
+                        fontWeight: defaultStyle?.weight ?? 400,
+                        fontStyle: defaultStyle?.italic ? "italic" : "normal",
                       }}
                     >
                       {text || family.name}
-                    </p>
-                  </Link>
-                </div>
+                    </div>
+                  </div>
 
-                <div className="flex items-center justify-between border-t border-line/60 pt-4 text-[14px] text-panel-muted">
-                  <span className="truncate pr-2">{family.designer}</span>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <a
-                      href={`/api/download/${family.slug}`}
-                      download
-                      className="hover:text-panel-ink transition-colors"
-                      aria-label={`Tải ${family.name}`}
-                    >
-                      <DownloadIcon />
-                    </a>
-                    <Link
-                      href={`/fonts/${family.slug}`}
-                      className="font-bold text-panel-ink hover:underline"
-                    >
-                      Chi tiết →
-                    </Link>
+                  <div className="flex items-center justify-between border-t border-line pt-4 text-[13px]">
+                    <div className="flex items-center gap-2">
+                      {family.axes.length > 0 && (
+                        <span className="rounded bg-soft px-1.5 py-0.5 text-[11px] font-bold text-panel-ink">
+                          Variable
+                        </span>
+                      )}
+                      {family.vietnamese && (
+                        <span className="text-[12px] text-panel-muted">Tiếng Việt</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`/api/download/${family.slug}`}
+                        download
+                        className="p-1.5 text-panel-muted transition-colors hover:text-panel-ink active:scale-90"
+                        title={`Tải về .zip (${formatBytes(family.size)})`}
+                        aria-label={`Tải về ${family.name}`}
+                      >
+                        <DownloadIcon />
+                      </a>
+                      <Link
+                        href={`/fonts/${family.slug}`}
+                        className="text-[13px] font-medium text-panel-ink hover:underline"
+                      >
+                        Chi tiết →
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
