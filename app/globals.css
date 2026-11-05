@@ -1,92 +1,105 @@
 @import "tailwindcss";
 
-/* Fontshare palette — dark yellow theme is the default, light is opt-in. */
-:root,
-:root[data-theme="dark"] {
+:root {
+  /* Dark mode (Fontshare: near black, 1px faint hair lines) */
   --paper: #10100e;
+  --panel: #161614;
+  --soft: #1d1d1a;
+  --line: #262622;
+  --faint: #3a3a33;
+  --muted: #8a8a7f;
   --ink: #ffffe3;
-  --muted: #c0c0ab;
-  --faint: #606055;
-  --line: #30302b;
-  --soft: #191815;
-  --panel: #10100e;
+  --cream: #ffffe3;
+
   --panel-ink: #ffffe3;
-  --panel-muted: #c0c0ab;
-  --panel-line: #30302b;
-  --row-hover: #191815;
-  --solid-bg: #ffffe3;
-  --solid-ink: #10100e;
-  --solid-hover-bg: #ffffff;
-  --solid-hover-ink: #10100e;
+  --panel-muted: #8a8a7f;
+  --panel-line: #262622;
+  --row-hover: #191916;
+
   --tab-active-bg: #ffffe3;
   --tab-active-ink: #10100e;
-  --tab-active-muted: #606055;
+  --tab-active-muted: #6b6b55;
+
+  --solid-bg: #ffffe3;
+  --solid-ink: #10100e;
+  --solid-hover-bg: #eaeacb;
+  --solid-hover-ink: #10100e;
+
   --selection-bg: #ffffe3;
   --selection-ink: #10100e;
 
-  /* Syntax Highlighting */
-  --code-bg: #141411;
-  --code-header: #191815;
-  --code-border: #30302b;
-  --code-line-num: #5c5c50;
-  --code-comment: #8a8a78;
-  --code-string: #7ee787;
-  --code-keyword: #ff7b72;
-  --code-property: #79c0ff;
-  --code-value: #ffa657;
-  --code-function: #d2a8ff;
-  --code-number: #f2cc60;
-  --code-tag: #ff7b72;
-  --code-attr: #79c0ff;
-  --code-punct: #c0c0ab;
+  --code-bg: #141412;
+  --code-header: #1a1a17;
+  --code-border: #262622;
+  --code-line-num: #55554c;
+  --code-comment: #707065;
+  --code-string: #d4a76a;
+  --code-keyword: #e07a5f;
+  --code-property: #81b29a;
+  --code-value: #f2cc8f;
+  --code-function: #64b5f6;
+  --code-number: #e29578;
+  --code-tag: #e07a5f;
+  --code-attr: #81b29a;
+  --code-punct: #8a8a7f;
 }
 
-:root[data-theme="light"] {
-  --paper: #ffffff;
-  --ink: #101010;
-  --muted: #666666;
-  --faint: #cccccc;
-  --line: #e5e5e5;
-  --soft: #f6f6f6;
-  --panel: #ffffff;
-  --panel-ink: #101010;
-  --panel-muted: #666666;
-  --panel-line: #e5e5e5;
-  --row-hover: #f5f5f5;
-  --solid-bg: #101010;
-  --solid-ink: #ffffff;
-  --solid-hover-bg: #222222;
-  --solid-hover-ink: #ffffff;
-  --tab-active-bg: #101010;
-  --tab-active-ink: #ffffff;
-  --tab-active-muted: #888888;
-  --selection-bg: #101010;
-  --selection-ink: #ffffff;
+html[data-theme="light"] {
+  /* Light mode (warm cream paper, dark ink) */
+  --paper: #f7f6f0;
+  --panel: #efeee6;
+  --soft: #e5e3d7;
+  --line: #dedccf;
+  --faint: #c8c5b6;
+  --muted: #6d6b60;
+  --ink: #161513;
+  --cream: #161513;
 
-  /* Syntax Highlighting */
-  --code-bg: #f8f8f7;
-  --code-header: #f0f0ee;
-  --code-border: #e2e2dd;
-  --code-line-num: #9e9e90;
-  --code-comment: #6a737d;
-  --code-string: #1a7f37;
-  --code-keyword: #cf222e;
-  --code-property: #0550ae;
-  --code-value: #953800;
-  --code-function: #8250df;
-  --code-number: #b05a00;
-  --code-tag: #cf222e;
-  --code-attr: #0550ae;
-  --code-punct: #57606a;
+  --panel-ink: #161513;
+  --panel-muted: #6d6b60;
+  --panel-line: #dedccf;
+  --row-hover: #e8e6dc;
+
+  --tab-active-bg: #161513;
+  --tab-active-ink: #f7f6f0;
+  --tab-active-muted: #9b9889;
+
+  --solid-bg: #161513;
+  --solid-ink: #f7f6f0;
+  --solid-hover-bg: #2a2926;
+  --solid-hover-ink: #f7f6f0;
+
+  --selection-bg: #161513;
+  --selection-ink: #f7f6f0;
+
+  --code-bg: #eceae0;
+  --code-header: #e2dfd3;
+  --code-border: #dedccf;
+  --code-line-num: #9b9889;
+  --code-comment: #7d7a6e;
+  --code-string: #8a5a20;
+  --code-keyword: #a83a22;
+  --code-property: #2d6a4f;
+  --code-value: #9c6615;
+  --code-function: #1d6fa5;
+  --code-number: #b05020;
+  --code-tag: #a83a22;
+  --code-attr: #2d6a4f;
+  --code-punct: #6d6b60;
 }
 
-@theme inline {
+@theme {
   --color-paper: var(--paper);
-  --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --color-line: var(--line);
   --color-soft: var(--soft);
+  --color-line: var(--line);
+  --color-faint: var(--faint);
+  --color-muted: var(--muted);
+  --color-ink: var(--ink);
+  --color-solid-bg: var(--solid-bg);
+  --color-solid-ink: var(--solid-ink);
+  --color-solid-hover-bg: var(--solid-hover-bg);
+  --color-solid-hover-ink: var(--solid-hover-ink);
+
   --color-panel: var(--panel);
   --color-panel-ink: var(--panel-ink);
   --color-panel-muted: var(--panel-muted);
@@ -200,6 +213,12 @@
 
   .nav-tab:hover {
     background: var(--soft);
+  }
+
+  .nav-tab:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: -2px;
+    z-index: 10;
   }
 
   .nav-tab[data-active="true"] {

@@ -150,51 +150,57 @@ function getGlyphName(char: string): string {
   return `Ký tự '${char}' (${hex})`;
 }
 
-interface GlyphGridGroupProps {
-  title: string;
-  chars: string[];
-  selectedChar: string;
-  onSelect: (char: string) => void;
-  fontStyle: React.CSSProperties;
-}
-
-// Bọc React.memo để tránh re-render hàng trăm nút bấm khi chọn ký tự
+// Subcomponent cho từng nhóm Glyph Grid
 const GlyphGridGroup = React.memo(function GlyphGridGroup({
   title,
   chars,
   selectedChar,
   onSelect,
   fontStyle,
-}: GlyphGridGroupProps) {
+}: {
+  title: string;
+  chars: string[];
+  selectedChar: string;
+  onSelect: (c: string) => void;
+  fontStyle: React.CSSProperties;
+}) {
   if (chars.length === 0) return null;
 
   return (
-    <div className="relative">
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="micro font-mono text-[11px] uppercase tracking-wider text-muted">
-          {title} ({chars.length})
-        </span>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-[12px] text-muted">
+        <span className="font-medium tracking-wide uppercase">{title}</span>
+        <span className="font-mono text-[11px]">{chars.length}</span>
       </div>
-      <div
-        style={fontStyle}
-        className="grid grid-cols-7 sm:grid-cols-11 md:grid-cols-11 border-l border-t border-line"
-      >
-        {chars.map((char) => {
+
+      <div className="grid grid-cols-6 gap-1 sm:grid-cols-8 md:grid-cols-10 xl:grid-cols-12">
+        {chars.map((char, index) => {
           const isSelected = selectedChar === char;
+          const codePoint = char.codePointAt(0);
+          const hex = codePoint
+            ? `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`
+            : "";
+
           return (
             <button
-              key={char}
+              key={`${char}-${index}`}
               type="button"
-              aria-label={getGlyphName(char)}
-              aria-pressed={isSelected}
               onClick={() => onSelect(char)}
-              className={`relative flex aspect-square min-h-[44px] items-center justify-center border-b border-r border-line bg-panel text-[20px] transition-colors cursor-pointer select-none ${
+              title={`${char} (${hex})`}
+              aria-label={`Xem ký tự ${char} (${hex})`}
+              aria-pressed={isSelected}
+              className={`group relative flex aspect-square items-center justify-center border text-[24px] transition-colors cursor-pointer select-none focus-visible:ring-1 focus-visible:ring-ink ${
                 isSelected
-                  ? "ring-2 ring-cream z-10 font-bold bg-soft text-cream"
-                  : "hover:bg-soft text-panel-ink"
+                  ? "border-ink bg-solid-bg text-solid-ink font-bold shadow-sm"
+                  : "border-line/60 bg-panel text-panel-ink hover:border-line hover:bg-soft"
               }`}
             >
-              {char}
+              <span style={fontStyle} className="leading-none pointer-events-none">
+                {char}
+              </span>
+              <span className="pointer-events-none absolute bottom-0.5 right-1 font-mono text-[9px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                {hex.replace("U+", "")}
+              </span>
             </button>
           );
         })}
@@ -203,35 +209,26 @@ const GlyphGridGroup = React.memo(function GlyphGridGroup({
   );
 });
 
-type Props = {
+interface Props {
   slug: string;
-  name: string;
   glyphsCount: number;
-  styles?: FontStyle[];
+  styles: FontStyle[];
   metrics?: FontMetrics;
-};
+}
 
 export function GlyphInspector({
   slug,
-  name,
   glyphsCount,
-  styles = [],
+  styles,
   metrics,
 }: Props) {
-  // Currently selected glyph (default 'R' like Fontshare Satoshi)
   const [selectedChar, setSelectedChar] = useState("R");
-  // Render mode: solid vs outlines
+  const [selectedStyleKey, setSelectedStyleKey] = useState<string>(
+    styles[0]?.key ?? "regular"
+  );
   const [renderMode, setRenderMode] = useState<"solid" | "outlines">("solid");
-  // Active style / weight
-  const [selectedStyleKey, setSelectedStyleKey] = useState<string>(() => {
-    const regular = styles.find((s) => !s.italic && s.weight === 400);
-    return regular?.key ?? styles[0]?.key ?? "400";
-  });
-  // Set mode: basic vs full
   const [setMode, setSetMode] = useState<"basic" | "full">("basic");
-  // Custom type your letters filter
   const [customInput, setCustomInput] = useState("");
-  // React 18 useDeferredValue để gõ phím không bị lag giao diện
   const deferredInput = useDeferredValue(customInput);
 
   // Container height measurement for dynamic responsive font-size
@@ -262,10 +259,50 @@ export function GlyphInspector({
   const charTitle = getGlyphName(selectedChar);
 
   // Grouped filtered characters với deferredInput
+  // Fix inverted search bug: Supports Unicode hex (e.g. 1ea1, U+1EA1, 0x1EA1), codepoint, glyph name, and character matching
   const filteredGroups = useMemo(() => {
-    const query = deferredInput.trim().toLowerCase();
+    const rawQuery = deferredInput.trim();
+    if (!rawQuery) {
+      return {
+        upper: UPPERCASE_CHARS,
+        lower: LOWERCASE_CHARS,
+        numerals: NUMERAL_CHARS,
+        viUpper: VI_ACCENTED_UPPER,
+        viLower: VI_ACCENTED_LOWER,
+        symbols: PUNCTUATION_AND_SYMBOLS,
+      };
+    }
+
+    const query = rawQuery.toLowerCase();
+    const cleanHexQuery = query.replace(/^(u\+|0x)/, "");
+
     const filter = (chars: string[]) =>
-      !query ? chars : chars.filter((c) => query.includes(c.toLowerCase()));
+      chars.filter((c) => {
+        // Direct character equality
+        if (c.toLowerCase() === query || c === rawQuery) return true;
+
+        // If user typed multiple test letters together (e.g. "aăâeê")
+        if (rawQuery.length <= 15 && !query.startsWith("u+") && !query.startsWith("0x") && rawQuery.includes(c)) {
+          return true;
+        }
+
+        // Match by unicode hex or decimal
+        const cp = c.codePointAt(0);
+        if (cp !== undefined) {
+          const hexStr = cp.toString(16).toLowerCase();
+          const uHexStr = `u+${hexStr}`;
+          if (hexStr === cleanHexQuery || uHexStr === query || hexStr.startsWith(cleanHexQuery)) {
+            return true;
+          }
+          if (String(cp) === query) return true;
+        }
+
+        // Match by character descriptive name
+        const name = getGlyphName(c).toLowerCase();
+        if (name.includes(query)) return true;
+
+        return false;
+      });
 
     return {
       upper: filter(UPPERCASE_CHARS),
@@ -330,23 +367,23 @@ export function GlyphInspector({
   // Cỡ chữ SVG đảm bảo tỷ lệ toán học chính xác 100%
   const computedFontSize = Math.round(canvasHeight * (unitsPerEm / totalRange));
 
+  const scrollToMetrics = () => {
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <section id="glyphs" className="shell mt-16 scroll-mt-20">
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 1. TOP HEADER                                                 */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. TOP HEADER */}
       <div className="border-b border-line pb-6">
         <h2 className="text-[28px] font-bold md:text-[34px] tracking-tight">
           {glyphsCount} Glyphs
         </h2>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 2. TWO-COLUMN WORKSPACE (Chuẩn Fontshare)                     */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. TWO-COLUMN WORKSPACE (Chuẩn Fontshare) */}
       <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-10">
-        {/* ── LEFT COLUMN: TYPOGRAPHY METRICS CANVAS ── */}
-        <div className="lg:col-span-6 flex flex-col">
+        {/* ── LEFT COLUMN: TYPOGRAPHY METRICS CANVAS (Sticky on desktop) ── */}
+        <div className="lg:col-span-6 flex flex-col lg:sticky lg:top-24 self-start">
           {/* Sub-header: Char Title & Solid / Outlines Toggle */}
           <div className="flex items-center justify-between border-b border-line/60 pb-3 text-[14px]">
             <div className="flex items-baseline gap-3">
@@ -430,28 +467,28 @@ export function GlyphInspector({
                 fontFamily={`'${slug}', sans-serif`}
                 fontWeight={activeWeight}
                 fontStyle={isItalic ? "italic" : "normal"}
-                fill={renderMode === "solid" ? "var(--ink)" : "none"}
-                stroke={renderMode === "outlines" ? "var(--ink)" : "none"}
-                strokeWidth={renderMode === "outlines" ? 2 : 0}
-                className="transition-colors duration-150"
+                fill={renderMode === "solid" ? "currentColor" : "none"}
+                stroke={renderMode === "outlines" ? "currentColor" : "none"}
+                strokeWidth={renderMode === "outlines" ? "1.5" : "0"}
+                className="text-panel-ink transition-all duration-200"
               >
                 {selectedChar}
               </text>
             </svg>
 
-            {/* Metric: Baseline (Bright solid line for primary reference) */}
+            {/* Metric: Baseline */}
             <div
-              className="absolute left-6 right-6 flex items-center justify-between text-[11px] text-ink -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
+              className="absolute left-6 right-6 flex items-center justify-between text-[11px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
               style={{ top: `${baselinePct}%` }}
             >
-              <span className="font-mono tracking-wider uppercase font-semibold text-ink">
+              <span className="font-mono tracking-wider uppercase text-muted font-medium">
                 Baseline
               </span>
-              <div className="mx-3 flex-1 border-b border-muted/80" />
-              <span className="font-mono font-semibold text-ink">0</span>
+              <div className="mx-3 flex-1 border-b border-muted/50 border-dashed" />
+              <span className="font-mono text-muted font-medium">0</span>
             </div>
 
-            {/* Bottom Metric: Descender */}
+            {/* Metric: Descender */}
             <div
               className="absolute left-6 right-6 flex items-center justify-between text-[11px] text-muted -translate-y-1/2 pointer-events-none z-10 transition-all duration-200"
               style={{ top: `${descenderPct}%` }}
@@ -465,8 +502,8 @@ export function GlyphInspector({
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN: CONTROLS & GROUPED GLYPH TABLE ── */}
-        <div className="lg:col-span-6 flex flex-col">
+        {/* ── RIGHT COLUMN: FULL GLYPH GRID MATRIX ── */}
+        <div className="lg:col-span-6">
           {/* Controls Bar: Style Dropdown, Basic Set / Full Set, Type your letters */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line/60 pb-3 text-[14px]">
             {/* Style Selector */}
@@ -526,11 +563,11 @@ export function GlyphInspector({
               <span className="micro text-[13px]" aria-hidden="true">✎</span>
               <input
                 type="text"
-                aria-label="Nhập chữ cái để lọc"
+                aria-label="Nhập chữ cái hoặc mã hex để lọc (ví dụ: a, 1EA1, U+1EA1)"
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
-                placeholder="Type your letters"
-                className="w-32 bg-transparent text-[13px] text-ink outline-none placeholder:text-muted/60"
+                placeholder="Lọc ký tự, hex..."
+                className="w-36 bg-transparent text-[13px] text-ink outline-none placeholder:text-muted/60"
               />
               {customInput && (
                 <button
@@ -555,12 +592,12 @@ export function GlyphInspector({
                   Không tìm thấy ký tự khớp với &ldquo;{customInput}&rdquo;
                 </p>
                 <p className="micro mt-1 text-muted">
-                  Phông chữ này có thể không chứa ký hiệu bạn đã nhập.
+                  Thử tìm theo chữ cái, mã Unicode Hex (ví dụ: 1EA1 hoặc U+1EA1) hoặc tên ký tự.
                 </p>
                 <button
                   type="button"
                   onClick={() => setCustomInput("")}
-                  className="btn-solid mt-4 py-1.5 px-3 text-[13px] cursor-pointer"
+                  className="btn-solid mt-4 text-[13px] cursor-pointer"
                 >
                   Xóa bộ lọc
                 </button>
@@ -638,6 +675,26 @@ export function GlyphInspector({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Mobile Sticky Quick Preview Bar */}
+      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-between rounded-lg border border-line bg-panel/95 px-4 py-2.5 shadow-2xl backdrop-blur">
+        <div className="flex items-center gap-3">
+          <span style={fontStyle} className="text-[26px] leading-none text-panel-ink">
+            {selectedChar}
+          </span>
+          <div className="flex flex-col">
+            <span className="font-mono text-[12px] font-bold text-ink">{hex}</span>
+            <span className="max-w-[170px] truncate text-[11px] text-muted">{charTitle}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={scrollToMetrics}
+          className="chip text-[12px] font-medium text-ink cursor-pointer"
+        >
+          Xem metric ↑
+        </button>
       </div>
     </section>
   );

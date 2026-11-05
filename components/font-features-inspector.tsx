@@ -7,6 +7,7 @@ interface FeatureConfig {
   id: string;
   tag: string;
   cssProperty: string;
+  inactiveCssProperty: string;
   name: string;
   description: string;
   defaultText: string;
@@ -19,6 +20,7 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     id: "liga",
     tag: "liga, dlig",
     cssProperty: '"liga" 1, "dlig" 1',
+    inactiveCssProperty: '"liga" 0, "dlig" 0, "clig" 0',
     name: "Ligatures (Chữ ghép / Nối nét)",
     description:
       "Tự động kết hợp các cặp ký tự liền kề có nét chạm nhau (như fi, fl, ff, ffi, ffl, Th, st) thành một glyph liền mạch tinh tế.",
@@ -30,6 +32,7 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     id: "ss01",
     tag: "ss01, salt",
     cssProperty: '"ss01" 1, "salt" 1',
+    inactiveCssProperty: '"ss01" 0, "salt" 0',
     name: "Stylistic Alternates (Kiểu dáng thay thế)",
     description:
       "Cung cấp các biến thể chữ cái hình học hoặc tối giản (như chữ 'a' một tầng, chữ 'g' mở, nét cong chữ 't' hoặc 'Q' thanh lịch).",
@@ -41,6 +44,7 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     id: "frac",
     tag: "frac",
     cssProperty: '"frac" 1',
+    inactiveCssProperty: '"frac" 0',
     name: "Fractions (Phân số chuẩn)",
     description:
       "Tự động chuyển các số ngăn cách bởi dấu gạch chéo thành phân số typography chuẩn xác với tử số và mẫu số thu nhỏ cân xứng.",
@@ -52,6 +56,7 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     id: "tnum",
     tag: "tnum",
     cssProperty: '"tnum" 1',
+    inactiveCssProperty: '"tnum" 0, "pnum" 1',
     name: "Tabular Figures (Chữ số thẳng cột)",
     description:
       "Đặt tất cả chữ số có chiều rộng bằng nhau (monospaced) để các con số căn thẳng hàng chuẩn xác trong bảng biểu tài chính.",
@@ -60,13 +65,38 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     category: "numerics",
   },
   {
+    id: "onum",
+    tag: "onum",
+    cssProperty: '"onum" 1',
+    inactiveCssProperty: '"onum" 0, "lnum" 1',
+    name: "Oldstyle Figures (Chữ số cổ điển)",
+    description:
+      "Chữ số có các nét nhô lên và hạ xuống (ascenders/descenders) hòa hợp tự nhiên vào dòng văn bản thường như chữ cái.",
+    defaultText: "Năm 1887 đến 1945: Tổng cộng 3,456 tài liệu và 789 cuốn sách cổ",
+    defaultActive: true,
+    category: "numerics",
+  },
+  {
+    id: "cpsp",
+    tag: "cpsp",
+    cssProperty: '"cpsp" 1',
+    inactiveCssProperty: '"cpsp" 0',
+    name: "Capital Spacing (Khoảng cách chữ hoa)",
+    description:
+      "Tự động tăng nhẹ khoảng cách tracking giữa các ký tự khi xuất hiện một chuỗi toàn chữ HOA (ALL-CAPS) để văn bản thoáng mắt.",
+    defaultText: "HÀ NỘI · SÀI GÒN · ĐÀ NẴNG · TYPOGRAPHY VIETNAM 2026",
+    defaultActive: true,
+    category: "punctuation",
+  },
+  {
     id: "case",
     tag: "case",
     cssProperty: '"case" 1',
-    name: "Case-Sensitive Forms (Dấu câu căn chữ hoa)",
+    inactiveCssProperty: '"case" 0',
+    name: "Case-Sensitive Forms (Dấu câu theo chữ hoa)",
     description:
-      "Dịch chuyển các dấu câu như ngoặc đơn, ngoặc vuông, gạch nối, dấu hai chấm lên cao để căn giữa hoàn hảo với chiều cao chữ HOA (Cap-height).",
-    defaultText: "(VIETNAM) [DESIGN] {FONTS} H-A-N-O-I · 2026:TYPO",
+      "Nâng cao vị trí các dấu câu như ngoặc đơn ( ), gạch ngang —, dấu hai chấm : để ngang hàng với chiều cao chữ hoa (Cap Height).",
+    defaultText: "(CHỮ HOA VỚI DẤU NGOẶC) [VÀ DẤU NGOẶC VUÔNG] — ĐỒNG VIỆT NAM: ₫",
     defaultActive: true,
     category: "punctuation",
   },
@@ -74,45 +104,35 @@ const OPENTYPE_FEATURES: FeatureConfig[] = [
     id: "zero",
     tag: "zero",
     cssProperty: '"zero" 1',
-    name: "Slashed Zero (Số 0 gạch chéo)",
+    inactiveCssProperty: '"zero" 0',
+    name: "Slashed Zero (Số 0 có gạch chéo)",
     description:
-      "Thêm nét gạch chéo qua số 0 để người đọc dễ dàng phân biệt với chữ cái hoa 'O' trong lập trình, biển số hoặc mã tài khoản.",
-    defaultText: "MÃ SỐ: 00980 · PIN: 0408 · SO SÁNH: O0O0 (Chữ O & Số 0)",
-    defaultActive: false,
-    category: "numerics",
-  },
-  {
-    id: "sups",
-    tag: "sups, subs",
-    cssProperty: '"sups" 1',
-    name: "Superscript & Subscript (Số mũ & Chỉ số dưới)",
-    description:
-      "Hiển thị số mũ trên (x² + y³ = z⁵, thứ tự 1st, 2nd) hoặc chỉ số dưới (H₂O, CO₂) theo tỷ lệ đường nét cân chỉnh chuyên biệt.",
-    defaultText: "Phương trình: x2 + y3 = z5 · Thứ tự: 1st, 2nd, 3rd · Hóa học: H2O + CO2",
-    defaultActive: false,
+      "Thêm nét gạch chéo hoặc chấm ở giữa số 0 để phân biệt tuyệt đối rõ ràng với chữ O in hoa trong mã code hoặc số liệu kỹ thuật.",
+    defaultText: "Mã số: 0O80-VN-2026 · IP: 192.168.0.100 · Port: 8080 · 000 ₫",
+    defaultActive: true,
     category: "numerics",
   },
   {
     id: "locl",
     tag: "locl",
     cssProperty: '"locl" 1',
-    name: "Localized Vietnamese Forms (Dấu thanh tiếng Việt chuẩn)",
+    inactiveCssProperty: '"locl" 0',
+    name: "Localized Forms (Ký tự địa phương hóa)",
     description:
-      "Tối ưu vị trí của 5 dấu thanh (sắc, huyền, hỏi, ngã, nặng) khi đặt trên các nguyên âm có nón như â, ă, ê, ô, ơ, ư, đảm bảo dấu không bị dính nét.",
-    defaultText: "Thuyền buồm chở ngập nắng chiều vàng óng ả trên dòng sông Hương xứ Huế.",
+      "Sử dụng các biến thể glyph đặc thù được tối ưu hóa cho từng ngôn ngữ cụ thể theo quy chuẩn ngôn ngữ ISO.",
+    defaultText: "Ký hiệu chuẩn tiền tệ: ₫ (Việt Nam Đồng) · Dấu kép tiếng Việt",
     defaultActive: true,
     category: "localized",
   },
 ];
 
-export function FontFeaturesInspector({
-  slug,
-  name,
-}: {
+interface Props {
   slug: string;
   name: string;
-}) {
-  // Active feature state dictionary
+}
+
+export function FontFeaturesInspector({ slug, name }: Props) {
+  // Trạng thái bật/tắt từng feature
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const f of OPENTYPE_FEATURES) {
@@ -210,7 +230,7 @@ export function FontFeaturesInspector({
                     <span className="font-bold text-[16px] md:text-[17px]">
                       {feature.name}
                     </span>
-                    <span className="rounded border border-line bg-soft px-2 py-0.5 font-mono text-[12px] font-bold text-cream">
+                    <span className="rounded border border-line bg-soft px-2 py-0.5 font-mono text-[12px] font-bold text-ink">
                       {feature.tag}
                     </span>
                   </div>
@@ -221,7 +241,7 @@ export function FontFeaturesInspector({
 
                 {/* Controls: Switch ON/OFF & Copy CSS */}
                 <div className="flex items-center gap-4">
-                  {/* Interactive Toggle Switch without invalid label wrapper */}
+                  {/* Interactive Toggle Switch */}
                   <div className="flex items-center gap-2 select-none">
                     <span className="text-[13px] font-medium text-panel-muted">
                       {isActive ? "BẬT" : "TẮT"}
@@ -232,13 +252,15 @@ export function FontFeaturesInspector({
                       aria-checked={isActive}
                       aria-label={`Bật tắt tính năng ${feature.name}`}
                       onClick={() => toggleFeature(feature.id)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                        isActive ? "bg-cream" : "bg-line"
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:ring-1 focus-visible:ring-ink cursor-pointer ${
+                        isActive ? "bg-solid-bg" : "bg-line"
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-paper transition-transform ${
-                          isActive ? "translate-x-6" : "translate-x-1"
+                        className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+                          isActive
+                            ? "translate-x-6 bg-solid-ink"
+                            : "translate-x-1 bg-paper"
                         }`}
                       />
                     </button>
@@ -253,8 +275,8 @@ export function FontFeaturesInspector({
                   >
                     {copiedId === feature.id ? (
                       <>
-                        <CheckIcon className="h-3.5 w-3.5 text-green-400" />
-                        <span className="text-green-400">Đã chép</span>
+                        <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                        <span className="text-green-500 font-medium">Đã chép</span>
                       </>
                     ) : (
                       <>
@@ -272,7 +294,7 @@ export function FontFeaturesInspector({
                 <div
                   className={`rounded border p-5 transition-colors ${
                     isActive
-                      ? "border-cream/40 bg-soft"
+                      ? "border-line bg-soft"
                       : "border-line/40 bg-panel opacity-60"
                   }`}
                 >
@@ -280,10 +302,10 @@ export function FontFeaturesInspector({
                     <span className="font-mono font-medium">
                       {isActive ? `KHI BẬT (${feature.tag})` : "HIỆN ĐANG TẮT"}
                     </span>
-                    <span className="font-mono text-[11px] text-cream">
+                    <span className="font-mono text-[11px] text-ink">
                       {isActive
                         ? `font-feature-settings: ${feature.cssProperty}`
-                        : "font-feature-settings: normal"}
+                        : `font-feature-settings: ${feature.inactiveCssProperty}`}
                     </span>
                   </div>
 
@@ -291,7 +313,7 @@ export function FontFeaturesInspector({
                     className="mt-2 text-[26px] leading-[1.3] text-panel-ink md:text-[32px]"
                     style={{
                       fontFamily: `'${slug}', sans-serif`,
-                      fontFeatureSettings: isActive ? feature.cssProperty : "normal",
+                      fontFeatureSettings: isActive ? feature.cssProperty : feature.inactiveCssProperty,
                       whiteSpace: isMultiline ? "pre-line" : "normal",
                     }}
                   >
@@ -303,10 +325,10 @@ export function FontFeaturesInspector({
                 <div className="rounded border border-line/40 bg-panel/60 p-5">
                   <div className="flex items-center justify-between pb-3 text-[12px] text-panel-muted">
                     <span className="font-mono font-medium">
-                      THAM CHIẾU (Không áp dụng feature)
+                      THAM CHIẾU (Tắt tính năng)
                     </span>
                     <span className="font-mono text-[11px] text-panel-muted">
-                      font-feature-settings: normal
+                      font-feature-settings: {feature.inactiveCssProperty}
                     </span>
                   </div>
 
@@ -314,7 +336,7 @@ export function FontFeaturesInspector({
                     className="mt-2 text-[26px] leading-[1.3] text-panel-ink opacity-70 md:text-[32px]"
                     style={{
                       fontFamily: `'${slug}', sans-serif`,
-                      fontFeatureSettings: "normal",
+                      fontFeatureSettings: feature.inactiveCssProperty,
                       whiteSpace: isMultiline ? "pre-line" : "normal",
                     }}
                   >
@@ -324,22 +346,33 @@ export function FontFeaturesInspector({
               </div>
 
               {/* Editable Sample Text Box */}
-              <div className="mt-4 flex items-center gap-3 border-t border-line/40 pt-3">
+              <div className="mt-4 flex items-start gap-3 border-t border-line/40 pt-3">
                 <label
                   htmlFor={`input-${feature.id}`}
-                  className="micro shrink-0 text-[12px]"
+                  className="micro shrink-0 text-[12px] pt-1"
                 >
                   Thử chữ riêng:
                 </label>
-                <input
-                  id={`input-${feature.id}`}
-                  type="text"
-                  aria-label={`Thử chữ riêng cho tính năng ${feature.name}`}
-                  value={currentText}
-                  onChange={(e) => updateText(feature.id, e.target.value)}
-                  placeholder="Gõ văn bản để kiểm tra..."
-                  className="w-full bg-transparent text-[14px] text-panel-ink outline-none placeholder:text-muted/60"
-                />
+                {isMultiline ? (
+                  <textarea
+                    id={`input-${feature.id}`}
+                    rows={3}
+                    aria-label={`Thử chữ riêng cho tính năng ${feature.name}`}
+                    value={currentText}
+                    onChange={(e) => updateText(feature.id, e.target.value)}
+                    className="w-full resize-y bg-transparent text-[14px] text-panel-ink outline-none placeholder:text-muted/60"
+                  />
+                ) : (
+                  <input
+                    id={`input-${feature.id}`}
+                    type="text"
+                    aria-label={`Thử chữ riêng cho tính năng ${feature.name}`}
+                    value={currentText}
+                    onChange={(e) => updateText(feature.id, e.target.value)}
+                    placeholder="Gõ văn bản để kiểm tra..."
+                    className="w-full bg-transparent text-[14px] text-panel-ink outline-none placeholder:text-muted/60"
+                  />
+                )}
               </div>
             </div>
           );

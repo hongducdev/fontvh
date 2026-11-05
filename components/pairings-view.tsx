@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import type { FontPairing } from "@/lib/pairings";
-import { ArrowRightIcon, SwapIcon } from "./icons";
+import { ArrowRightIcon, SwapIcon, CheckIcon, CopyIcon } from "./icons";
 
 function PairingCard({ pairing }: { pairing: FontPairing }) {
   const [swapped, setSwapped] = useState(false);
@@ -11,9 +11,43 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
   const [bodyText, setBodyText] = useState(pairing.body.sample);
   const [headingSize, setHeadingSize] = useState(48);
   const [bodySize, setBodySize] = useState(16);
+  const [copied, setCopied] = useState(false);
 
   const headFont = swapped ? pairing.body : pairing.heading;
   const bodyFont = swapped ? pairing.heading : pairing.body;
+
+  // Typographic hierarchy: ensure heading gets bold weight and body gets comfortable reading weight
+  const headWeight = swapped ? 700 : pairing.heading.weight;
+  const bodyWeight = swapped ? 400 : pairing.body.weight;
+
+  const headingRef = useRef<HTMLTextAreaElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textareas
+  useEffect(() => {
+    if (headingRef.current) {
+      headingRef.current.style.height = "auto";
+      headingRef.current.style.height = `${headingRef.current.scrollHeight}px`;
+    }
+  }, [headingText, headingSize]);
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.style.height = "auto";
+      bodyRef.current.style.height = `${bodyRef.current.scrollHeight}px`;
+    }
+  }, [bodyText, bodySize]);
+
+  const copyPairCss = async () => {
+    const css = `/* Font Pairing: ${pairing.title} */\n/* Heading (${headFont.name}) */\nfont-family: '${headFont.slug}', sans-serif;\nfont-weight: ${headWeight};\n\n/* Body (${bodyFont.name}) */\nfont-family: '${bodyFont.slug}', sans-serif;\nfont-weight: ${bodyWeight};`;
+    try {
+      await navigator.clipboard.writeText(css);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignore
+    }
+  };
 
   return (
     <div className="border-b border-line bg-panel p-6 text-panel-ink transition-colors md:p-10">
@@ -53,7 +87,7 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
               step={2}
               value={headingSize}
               onChange={(e) => setHeadingSize(Number(e.target.value))}
-              className="range w-20 sm:w-28"
+              className="range w-20 sm:w-28 cursor-pointer"
             />
             <span className="text-[13px] font-bold">{headingSize}px</span>
           </div>
@@ -67,38 +101,51 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
               step={1}
               value={bodySize}
               onChange={(e) => setBodySize(Number(e.target.value))}
-              className="range w-16 sm:w-24"
+              className="range w-16 sm:w-24 cursor-pointer"
             />
             <span className="text-[13px] font-bold">{bodySize}px</span>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setSwapped((prev) => !prev)}
-          className="chip flex items-center gap-1.5 text-[13px] hover:text-panel-ink"
-        >
-          <SwapIcon />
-          <span>Đổi vị trí font</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={copyPairCss}
+            className="chip flex items-center gap-1.5 text-[13px] hover:text-panel-ink cursor-pointer"
+            title="Sao chép CSS cho cặp font này"
+          >
+            {copied ? <CheckIcon className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />}
+            <span>{copied ? "Đã chép CSS" : "Copy CSS"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSwapped((prev) => !prev)}
+            className="chip flex items-center gap-1.5 text-[13px] hover:text-panel-ink cursor-pointer"
+          >
+            <SwapIcon />
+            <span>Đổi vị trí font</span>
+          </button>
+        </div>
       </div>
 
-      {/* Live Specimen Preview (Directly editable) */}
+      {/* Live Specimen Preview (Directly editable & auto-wrapping) */}
       <div className="my-8 space-y-5">
         <div>
           <label htmlFor={`head-${pairing.id}`} className="sr-only">
             Nội dung tiêu đề
           </label>
-          <input
+          <textarea
             id={`head-${pairing.id}`}
-            type="text"
+            ref={headingRef}
+            rows={1}
             value={headingText}
             onChange={(e) => setHeadingText(e.target.value)}
-            className="w-full bg-transparent leading-[1.1] tracking-[-0.02em] text-panel-ink outline-none"
+            className="w-full resize-none overflow-hidden bg-transparent leading-[1.22] tracking-[-0.02em] text-panel-ink outline-none break-words"
             style={{
-              fontFamily: `'${headFont.slug}'`,
+              fontFamily: `'${headFont.slug}', sans-serif`,
               fontSize: `${headingSize}px`,
-              fontWeight: headFont.weight,
+              fontWeight: headWeight,
             }}
           />
         </div>
@@ -109,14 +156,15 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
           </label>
           <textarea
             id={`body-${pairing.id}`}
+            ref={bodyRef}
             rows={3}
             value={bodyText}
             onChange={(e) => setBodyText(e.target.value)}
-            className="w-full resize-none bg-transparent leading-[1.6] text-panel-ink outline-none"
+            className="w-full resize-none overflow-hidden bg-transparent leading-[1.65] text-panel-ink outline-none break-words"
             style={{
-              fontFamily: `'${bodyFont.slug}'`,
+              fontFamily: `'${bodyFont.slug}', sans-serif`,
               fontSize: `${bodySize}px`,
-              fontWeight: bodyFont.weight,
+              fontWeight: bodyWeight,
             }}
           />
         </div>
@@ -131,7 +179,7 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
               href={`/fonts/${headFont.slug}`}
               className="font-bold text-panel-ink hover:underline"
             >
-              {headFont.name} ({headFont.weight})
+              {headFont.name} ({headWeight})
             </Link>
           </span>
           <span>·</span>
@@ -141,7 +189,7 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
               href={`/fonts/${bodyFont.slug}`}
               className="font-bold text-panel-ink hover:underline"
             >
-              {bodyFont.name} ({bodyFont.weight})
+              {bodyFont.name} ({bodyWeight})
             </Link>
           </span>
         </div>
@@ -149,7 +197,7 @@ function PairingCard({ pairing }: { pairing: FontPairing }) {
         <div className="flex items-center gap-4">
           <Link
             href={`/fonts/${headFont.slug}`}
-            className="inline-flex items-center gap-1 font-bold text-cream hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-panel-ink hover:underline"
           >
             <span>Khám phá {headFont.name}</span>
             <ArrowRightIcon />

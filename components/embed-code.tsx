@@ -47,7 +47,7 @@ function tokenizeCss(line: string): Token[] {
   const tokens: Token[] = [];
   let lastIndex = 0;
   const regex =
-    /(\/\*[\s\S]*?\*\/)|('(?:\\'|[^'])*'|"(?:\\"|[^"])*")|(@font-face\b|\bbody\b)|(\b(?:font-family|font-weight|font-style|font-display|src)\b)|(\b(?:url|format)\b)|(\b(?:swap|normal|italic|serif|sans-serif|monospace|system-ui)\b)|(\b\d+\b)|([{}();:,])/g;
+    /(\/\*[\s\S]*?\*\/)|('(?:\\'|[^'])*'|"(?:\\"|[^"])*")|(@font-face\b|\bbody\b|@theme\b)|(\b(?:font-family|font-weight|font-style|font-display|src)\b|--font-[\w-]+)|(\b(?:url|format)\b)|(\b(?:swap|normal|italic|serif|sans-serif|monospace|system-ui)\b)|(\b\d+\b)|([{}();:,])/g;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(line)) !== null) {
@@ -88,7 +88,7 @@ function tokenizeHtml(line: string): Token[] {
   const tokens: Token[] = [];
   let lastIndex = 0;
   const regex =
-    /(<!--[\s\S]*?-->)|("(?:\\"|[^"])*"|'(?:\\'|[^'])*')|(<\/?link\b|\/>|>|<)|(\b(?:rel|href|as|type|crossorigin)\b)|([=])/g;
+    /(<!--[\s\S]*?-->)|("(?:\\"|[^"])*"|'(?:\\'|[^'])*')|(<\/?[a-zA-Z0-9-]+\b|\/>|>|<)|(\b(?:rel|href|as|type|crossorigin|style|font-family)\b)|([=])/g;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(line)) !== null) {
@@ -120,13 +120,13 @@ function tokenizeHtml(line: string): Token[] {
 }
 
 function tokenizeTailwind(line: string): Token[] {
-  if (line.trim().startsWith("//")) {
+  if (line.trim().startsWith("//") || line.trim().startsWith("/*")) {
     return [{ type: "comment", text: line }];
   }
   const tokens: Token[] = [];
   let lastIndex = 0;
   const regex =
-    /(\/\/.*)|('(?:\\'|[^'])*'|"(?:\\"|[^"])*")|(\b(?:module\.exports|module|exports)\b)|(\b(?:theme|extend|fontFamily)\b)|(\b(?:sans-serif|serif|monospace)\b)|([{}()[\],;:=])/g;
+    /(\/\/.*|\/\*[\s\S]*?\*\/)|('(?:\\'|[^'])*'|"(?:\\"|[^"])*")|(@theme\b|\b(?:module\.exports|module|exports)\b)|(\b(?:theme|extend|fontFamily)\b|--font-[\w-]+)|(\b(?:sans-serif|serif|monospace)\b)|([{}()[\\],;:=])/g;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(line)) !== null) {
@@ -173,6 +173,12 @@ export function EmbedCode({ family }: Props) {
   const [tab, setTab] = useState<"css" | "html" | "tailwind">("css");
   const [copied, setCopied] = useState(false);
 
+  const fallbackGeneric = family.categories.includes("serif")
+    ? "Georgia, serif"
+    : family.categories.includes("monospace") || family.categories.includes("mono")
+    ? "monospace"
+    : "sans-serif";
+
   const regularStyle =
     family.styles.find((s) => !s.italic && s.weight === 400) ?? family.styles[0];
 
@@ -189,16 +195,16 @@ export function EmbedCode({ family }: Props) {
         `}`,
         ``,
         `body {`,
-        `  font-family: '${family.name}', system-ui, sans-serif;`,
+        `  font-family: '${family.name}', ${fallbackGeneric};`,
         `}`,
       ].join("\n"),
-    [family, regularStyle]
+    [family, regularStyle, fallbackGeneric]
   );
 
   const htmlSnippet = useMemo(
     () =>
       [
-        `<!-- Nhúng qua thẻ link preload trong <head> -->`,
+        `<!-- 1. Preload font WOFF2 để trình duyệt ưu tiên tải sớm -->`,
         `<link`,
         `  rel="preload"`,
         `  href="/fonts/${family.slug}/${regularStyle.file}"`,
@@ -206,25 +212,44 @@ export function EmbedCode({ family }: Props) {
         `  type="font/woff2"`,
         `  crossorigin="anonymous"`,
         `/>`,
+        ``,
+        `<!-- 2. Khai báo @font-face trong thẻ <style> -->`,
+        `<style>`,
+        `  @font-face {`,
+        `    font-family: '${family.name}';`,
+        `    src: url('/fonts/${family.slug}/${regularStyle.file}') format('woff2');`,
+        `    font-weight: ${regularStyle.variable && regularStyle.weightRange ? `${regularStyle.weightRange[0]} ${regularStyle.weightRange[1]}` : regularStyle.weight};`,
+        `    font-style: ${regularStyle.italic ? "italic" : "normal"};`,
+        `    font-display: swap;`,
+        `  }`,
+        `  body {`,
+        `    font-family: '${family.name}', ${fallbackGeneric};`,
+        `  }`,
+        `</style>`,
       ].join("\n"),
-    [family, regularStyle]
+    [family, regularStyle, fallbackGeneric]
   );
 
   const tailwindSnippet = useMemo(
     () =>
       [
-        `// tailwind.config.js hoặc @theme inline`,
+        `/* Cách 1: Tailwind CSS v4 (Thêm vào globals.css) */`,
+        `@theme {`,
+        `  --font-${family.slug}: '${family.name}', ${fallbackGeneric};`,
+        `}`,
+        ``,
+        `/* Cách 2: Tailwind CSS v3 (tailwind.config.js) */`,
         `module.exports = {`,
         `  theme: {`,
         `    extend: {`,
         `      fontFamily: {`,
-        `        '${family.slug}': ['"${family.name}"', 'sans-serif'],`,
+        `        '${family.slug}': ['"${family.name}"', '${fallbackGeneric.split(",")[0].trim()}'],`,
         `      },`,
         `    },`,
         `  },`,
         `};`,
       ].join("\n"),
-    [family]
+    [family, fallbackGeneric]
   );
 
   const currentSnippet =
@@ -298,76 +323,37 @@ export function EmbedCode({ family }: Props) {
             className="btn ml-2 flex items-center gap-1.5 py-1.5 text-[13px] cursor-pointer"
           >
             {copied ? <CheckIcon /> : <CopyIcon />}
-            <span>{copied ? "Đã copy" : "Copy code"}</span>
+            <span>{copied ? "Đã copy" : "Copy mã"}</span>
           </button>
         </div>
       </div>
 
-      {/* Code Block Window with Line Numbers & Color Highlighting */}
-      <div className="mt-6 overflow-hidden border border-code-border bg-code-bg">
-        {/* Editor Window Title Bar */}
-        <div className="flex items-center justify-between border-b border-code-border bg-code-header px-4 py-2.5 text-[12px]">
-          <div className="flex items-center gap-3">
-            {/* Terminal Window Dots */}
-            <div className="flex items-center gap-1.5" aria-hidden="true">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
-            </div>
-
-            {/* File Name Pill */}
-            <div className="flex items-center gap-1.5 font-mono text-[12px] font-medium text-muted">
-              <span>{fileInfo.name}</span>
-            </div>
+      {/* Code window with line numbers and syntax highlighting */}
+      <div className="code-window mt-6">
+        {/* Title bar */}
+        <div className="code-titlebar">
+          <div className="code-dots">
+            <span className="code-dot bg-[#ff5f56]" />
+            <span className="code-dot bg-[#ffbd2e]" />
+            <span className="code-dot bg-[#27c93f]" />
           </div>
-
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
-              {fileInfo.lang} · {lines.length} dòng
-            </span>
-            <button
-              type="button"
-              onClick={copySnippet}
-              className="inline-flex items-center gap-1 font-mono text-[11px] text-muted transition-colors hover:text-ink cursor-pointer"
-              title="Sao chép toàn bộ mã"
-            >
-              {copied ? (
-                <>
-                  <CheckIcon className="h-3.5 w-3.5 text-code-string" />
-                  <span className="text-code-string">Đã chép</span>
-                </>
-              ) : (
-                <>
-                  <CopyIcon className="h-3.5 w-3.5" />
-                  <span>Chép mã</span>
-                </>
-              )}
-            </button>
-          </div>
+          <span className="code-filename">{fileInfo.name}</span>
+          <span className="code-lang">{fileInfo.lang}</span>
         </div>
 
-        {/* Code Content with Line Numbers Column */}
-        <div className="overflow-x-auto py-3.5">
-          <div className="min-w-full font-mono text-[13px] leading-[22px]">
-            {lines.map((line, idx) => {
+        {/* Code body */}
+        <pre className="code-body">
+          <code>
+            {lines.map((line, i) => {
               const tokens = tokenizeLine(line, tab);
               return (
-                <div
-                  key={idx}
-                  className="group flex transition-colors hover:bg-code-header/60"
-                >
-                  {/* Line Number Gutter */}
-                  <span
-                    className="w-12 shrink-0 select-none pr-4 text-right font-mono text-[12px] text-code-line-num transition-colors group-hover:text-muted"
-                    aria-hidden="true"
-                  >
-                    {idx + 1}
+                <div key={i} className="code-line">
+                  <span className="code-lineno" aria-hidden="true">
+                    {i + 1}
                   </span>
-
-                  {/* Code Tokens */}
-                  <span className="flex-1 whitespace-pre pl-2 pr-6">
-                    {tokens.map((token, tIdx) => (
-                      <span key={tIdx} className={TOKEN_CLASS[token.type]}>
+                  <span className="code-text">
+                    {tokens.map((token, j) => (
+                      <span key={j} className={TOKEN_CLASS[token.type]}>
                         {token.text}
                       </span>
                     ))}
@@ -375,8 +361,8 @@ export function EmbedCode({ family }: Props) {
                 </div>
               );
             })}
-          </div>
-        </div>
+          </code>
+        </pre>
       </div>
     </section>
   );

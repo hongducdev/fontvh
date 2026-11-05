@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { FontFamily } from "@/lib/types";
 import { FontshareCard } from "./FontshareCard";
@@ -16,7 +16,7 @@ const PANGRAM_PRESETS = [
   { label: "Tên font", text: "" },
   { label: "Hồn Việt", text: "Hồn Việt ngàn năm tỏa sáng" },
   { label: "Thơ ca", text: "Gió đưa cành trúc la đà, tiếng chuông Trấn Vũ" },
-  { label: "Đủ dấu", text: "Ắ Ề Ỗ Ữ Ỹ Ỵ Đ ₫ ă â ê ô ơ ư ả ạ ẽ ị ỏ ũ" },
+  { label: "Đủ dấu", text: "Ắ Ề Ỗ Ữ Ỳ Ỵ Đ ₫ ă â ê ô ơ ư ả ạ ẽ ị ỏ ũ" },
   { label: "Triết lý", text: "Chữ Việt đẹp tử tế trong từng đường nét thiết kế" },
   { label: "A - Z", text: "A B C D E F G H I K L M N O P Q R S T U V X Y" },
   { label: "0 - 9", text: "0 1 2 3 4 5 6 7 8 9 · ₫ $ € £ ¥ & @ #" },
@@ -25,12 +25,13 @@ const PANGRAM_PRESETS = [
 
 const SIZE_PRESETS = [24, 36, 48, 64, 88, 120];
 
+// Normalize Vietnamese string: lowercase first, strip diacritics, convert đ/Đ to d
 const normalize = (value: string) =>
   value
+    .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
-    .replace(/đ/g, "d")
-    .toLowerCase()
+    .replace(/[đĐ]/g, "d")
     .trim();
 
 function formatBytes(bytes: number) {
@@ -63,6 +64,21 @@ export function FontsBrowser({
   const [onlyVietnamese, setOnlyVietnamese] = useState(initialVi);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = useState<"default" | "name" | "styles">("default");
+
+  // Sync search & filters with URL without reloading
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (query) url.searchParams.set("q", query);
+    else url.searchParams.delete("q");
+    if (category) url.searchParams.set("category", category);
+    else url.searchParams.delete("category");
+    if (onlyVariable) url.searchParams.set("variable", "1");
+    else url.searchParams.delete("variable");
+    if (onlyVietnamese) url.searchParams.set("vi", "1");
+    else url.searchParams.delete("vi");
+    window.history.replaceState(null, "", url.toString());
+  }, [query, category, onlyVariable, onlyVietnamese]);
 
   const filtered = useMemo(() => {
     const q = normalize(query);
@@ -134,7 +150,7 @@ export function FontsBrowser({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Tìm theo tên, nhà thiết kế…"
-              className="w-full bg-transparent text-[14px] leading-[20px] outline-none placeholder:text-muted"
+              className="w-full bg-transparent text-[14px] leading-[20px] outline-none placeholder:text-muted focus-visible:ring-1 focus-visible:ring-ink"
             />
             {query && (
               <button
@@ -159,7 +175,7 @@ export function FontsBrowser({
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Nhập chữ thử cho tất cả font (hoặc bấm trực tiếp vào tên font bên dưới để gõ)…"
-              className="w-full bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-faint"
+              className="w-full bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-faint focus-visible:ring-1 focus-visible:ring-ink"
             />
             {text && (
               <button
@@ -366,9 +382,9 @@ export function FontsBrowser({
           ))}
         </div>
       ) : (
-        /* GRID VIEW — 2-column cards layout */
-        <div className="grid grid-cols-1 divide-y divide-line border-b border-line md:grid-cols-2 md:divide-x md:divide-y-0">
-          {filtered.map((family) => {
+        /* GRID VIEW — 2-column cards layout with consistent borders */
+        <div className="grid grid-cols-1 border-b border-line md:grid-cols-2">
+          {filtered.map((family, idx) => {
             const previewStyle =
               family.styles.find(
                 (s) => !s.italic && s.weight === family.preview.weight
@@ -379,14 +395,16 @@ export function FontsBrowser({
             return (
               <div
                 key={family.slug}
-                className="group flex flex-col justify-between bg-panel p-6 transition-colors hover:bg-row-hover md:p-8"
+                className={`group flex flex-col justify-between bg-panel p-6 transition-colors hover:bg-row-hover md:p-8 border-b border-line ${
+                  idx % 2 === 1 ? "md:border-l md:border-line" : ""
+                }`}
               >
                 <div>
                   <div className="flex items-baseline justify-between text-[14px] leading-[20px]">
                     <div className="flex items-baseline gap-3">
                       <Link
                         href={`/fonts/${family.slug}`}
-                        className="font-bold hover:underline"
+                        className="font-bold hover:underline text-panel-ink"
                       >
                         {family.name}
                       </Link>
@@ -404,7 +422,7 @@ export function FontsBrowser({
                     className="my-8 block min-h-[100px] overflow-hidden"
                   >
                     <p
-                      className="line-clamp-2 leading-[1.15] tracking-[-0.02em] text-panel-ink"
+                      className="line-clamp-2 leading-[1.25] tracking-[-0.02em] text-panel-ink"
                       style={{
                         fontFamily: `'${family.slug}'`,
                         fontSize: `clamp(28px, ${Math.min(size, 80)}px, 80px)`,
@@ -423,14 +441,14 @@ export function FontsBrowser({
                     <a
                       href={`/api/download/${family.slug}`}
                       download
-                      className="hover:text-panel-ink"
+                      className="hover:text-panel-ink transition-colors"
                       aria-label={`Tải ${family.name}`}
                     >
                       <DownloadIcon />
                     </a>
                     <Link
                       href={`/fonts/${family.slug}`}
-                      className="font-bold text-cream hover:underline"
+                      className="font-bold text-panel-ink hover:underline"
                     >
                       Chi tiết →
                     </Link>

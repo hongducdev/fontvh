@@ -4,6 +4,13 @@ import { useState } from "react";
 import type { FontStyle } from "@/lib/types";
 import { CheckIcon, CopyIcon } from "./icons";
 
+const STYLE_PRESETS = [
+  "Chữ Việt đẹp và tinh tế trong từng nét chữ",
+  "Gió đưa cành trúc la đà, tiếng chuông Trấn Vũ canh gà Thọ Xương",
+  "Ắ Ề Ỗ Ữ Ỳ Ỵ Đ ₫ ă â ê ô ơ ư ả ạ ẽ ị ỏ ũ — 2026",
+  "The quick brown fox jumps over the lazy dog",
+];
+
 export function StylesGallery({
   slug,
   name,
@@ -13,18 +20,28 @@ export function StylesGallery({
   name: string;
   styles: FontStyle[];
 }) {
-  const [sample, setSample] = useState("Chữ Việt đẹp và tinh tế trong từng nét chữ");
+  const [sample, setSample] = useState(STYLE_PRESETS[0]);
   const [size, setSize] = useState(48);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   async function copyStyleCss(style: FontStyle) {
+    const weightVal = style.weightRange
+      ? `${style.weightRange[0]} ${style.weightRange[1]}`
+      : style.weight;
+
     const css = [
       `@font-face {`,
       `  font-family: '${name}';`,
       `  src: url('/fonts/${slug}/${style.file}') format('woff2');`,
-      `  font-weight: ${style.weight};`,
+      `  font-weight: ${weightVal};`,
       `  font-style: ${style.italic ? "italic" : "normal"};`,
       `  font-display: swap;`,
+      `}`,
+      ``,
+      `.my-text {`,
+      `  font-family: '${name}', sans-serif;`,
+      `  font-weight: ${style.weight};`,
+      `  font-style: ${style.italic ? "italic" : "normal"};`,
       `}`,
     ].join("\n");
 
@@ -59,25 +76,42 @@ export function StylesGallery({
             step={2}
             value={size}
             onChange={(e) => setSize(Number(e.target.value))}
-            className="range w-24 sm:w-32"
+            className="range w-24 sm:w-32 cursor-pointer"
           />
-          <span className="text-[14px] font-bold">{size}px</span>
+          <span className="text-[14px] font-bold min-w-[36px] text-right">{size}px</span>
         </div>
       </div>
 
-      {/* Global Sample Text Input */}
-      <div className="flex items-center gap-3 border-b border-line py-4">
-        <label htmlFor="styles-sample-input" className="micro shrink-0">
-          Văn bản thử:
-        </label>
-        <input
-          id="styles-sample-input"
-          type="text"
-          value={sample}
-          onChange={(e) => setSample(e.target.value)}
-          placeholder="Nhập câu thử cho tất cả style..."
-          className="w-full bg-transparent text-[16px] leading-[20px] outline-none placeholder:text-muted"
-        />
+      {/* Global Sample Text Input & Quick Preset Buttons */}
+      <div className="border-b border-line py-4">
+        <div className="flex items-center gap-3">
+          <label htmlFor="styles-sample-input" className="micro shrink-0">
+            Văn bản thử:
+          </label>
+          <input
+            id="styles-sample-input"
+            type="text"
+            value={sample}
+            onChange={(e) => setSample(e.target.value)}
+            placeholder="Nhập câu thử cho tất cả style..."
+            className="w-full bg-transparent text-[16px] leading-[20px] outline-none placeholder:text-muted"
+          />
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="micro mr-1">Mẫu nhanh:</span>
+          {STYLE_PRESETS.map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setSample(preset)}
+              className="chip text-[12px] cursor-pointer"
+              data-active={sample === preset || undefined}
+            >
+              {preset.split("—")[0].slice(0, 24)}...
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Styles List */}
@@ -98,13 +132,13 @@ export function StylesGallery({
               <button
                 type="button"
                 onClick={() => copyStyleCss(style)}
-                className="flex items-center gap-1.5 text-[13px] text-panel-muted opacity-80 hover:text-panel-ink group-hover:opacity-100"
+                className="flex items-center gap-1.5 text-[13px] text-panel-muted opacity-80 hover:text-panel-ink group-hover:opacity-100 cursor-pointer"
                 title="Sao chép CSS @font-face cho kiểu này"
               >
                 {copiedKey === style.key ? (
                   <>
-                    <CheckIcon className="h-4 w-4" />
-                    <span>Đã sao chép</span>
+                    <CheckIcon className="h-4 w-4 text-green-500" />
+                    <span className="text-green-500 font-medium">Đã sao chép</span>
                   </>
                 ) : (
                   <>
@@ -116,9 +150,9 @@ export function StylesGallery({
             </div>
 
             <p
-              className="mt-4 truncate leading-[1.15] tracking-[-0.02em] text-panel-ink"
+              className="mt-4 leading-[1.3] tracking-[-0.02em] text-panel-ink py-1 overflow-x-auto whitespace-nowrap scrollbar-none"
               style={{
-                fontFamily: `'${slug}'`,
+                fontFamily: `'${slug}', sans-serif`,
                 fontSize: `${size}px`,
                 fontWeight: style.weight,
                 fontStyle: style.italic ? "italic" : "normal",

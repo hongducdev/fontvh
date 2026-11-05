@@ -12,6 +12,7 @@ import {
   AlignCenterIcon,
   AlignRightIcon,
   CheckIcon,
+  CopyIcon,
 } from "./icons";
 
 function formatBytes(bytes: number) {
@@ -42,6 +43,12 @@ export function FontshareCard({
     family.styles.find((s) => !s.italic) ??
     family.styles[0];
 
+  const fallbackGeneric = family.categories.includes("serif")
+    ? "serif"
+    : family.categories.includes("monospace") || family.categories.includes("mono")
+    ? "monospace"
+    : "sans-serif";
+
   // State
   const [localText, setLocalText] = useState<string | null>(null);
   const [isCustomized, setIsCustomized] = useState(false);
@@ -59,16 +66,17 @@ export function FontshareCard({
   const [columns, setColumns] = useState<"single" | "double" | "triple">("single");
   const [colorMode, setColorMode] = useState<"black" | "white">("black");
   const [appliedNotice, setAppliedNotice] = useState(false);
+  const [copiedCss, setCopiedCss] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync size when globalSize changes and not locally customized
   useEffect(() => {
-    if (globalSize && globalSize !== 64) {
+    if (globalSize !== undefined && !isCustomized) {
       setSize(globalSize);
     }
-  }, [globalSize]);
+  }, [globalSize, isCustomized]);
 
   // Read favorite from localStorage
   useEffect(() => {
@@ -113,10 +121,6 @@ export function FontshareCard({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Compute active preview text:
-  // If user has edited locally: use localText
-  // Else if globalText is passed and non-empty: use globalText
-  // Else: default to family name
   const currentText = isCustomized
     ? localText ?? ""
     : globalText && globalText.trim().length > 0
@@ -169,6 +173,19 @@ export function FontshareCard({
     setTimeout(() => setAppliedNotice(false), 2000);
   };
 
+  const handleCopyCss = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const decl = `font-family: '${family.slug}', ${fallbackGeneric}; font-weight: ${weight}; font-style: ${italic ? "italic" : "normal"};`;
+      await navigator.clipboard.writeText(decl);
+      setCopiedCss(true);
+      setTimeout(() => setCopiedCss(false), 2000);
+    } catch {
+      // Ignore
+    }
+  };
+
   const isLight = colorMode === "white";
 
   return (
@@ -191,9 +208,7 @@ export function FontshareCard({
           : "bg-panel text-panel-ink hover:bg-row-hover"
       } ${className}`}
     >
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 1. TOP HEADER & INLINE CONTROLS (Fontshare Image 1 & 2 Style) */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. TOP HEADER & INLINE CONTROLS */}
       <div
         className={`flex flex-wrap items-center justify-between gap-y-3 gap-x-6 border-b px-5 py-3.5 text-[13px] md:px-10 ${
           isLight ? "border-[#e5e5e0] text-[#555]" : "border-line text-panel-muted"
@@ -293,8 +308,8 @@ export function FontshareCard({
             )}
           </div>
 
-          {/* Weight Slider */}
-          <div className="flex items-center gap-2">
+          {/* Weight Slider with numeric feedback */}
+          <div className="flex items-center gap-1.5">
             <label htmlFor={`weight-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
               Weight
             </label>
@@ -306,12 +321,13 @@ export function FontshareCard({
               step={weightAxis ? 1 : 100}
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
-              className="range w-20 sm:w-24 cursor-pointer"
+              className="range w-16 sm:w-20 cursor-pointer"
             />
+            <span className="font-mono text-[11px] opacity-75 min-w-[28px] text-right">{weight}</span>
           </div>
 
-          {/* Size Slider */}
-          <div className="flex items-center gap-2">
+          {/* Size Slider with numeric feedback */}
+          <div className="flex items-center gap-1.5">
             <label htmlFor={`size-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
               Size
             </label>
@@ -323,12 +339,13 @@ export function FontshareCard({
               step={2}
               value={size}
               onChange={(e) => setSize(Number(e.target.value))}
-              className="range w-20 sm:w-24 cursor-pointer"
+              className="range w-16 sm:w-20 cursor-pointer"
             />
+            <span className="font-mono text-[11px] opacity-75 min-w-[32px] text-right">{size}px</span>
           </div>
 
-          {/* Leading (Line-height) Slider */}
-          <div className="flex items-center gap-2">
+          {/* Leading Slider with numeric feedback */}
+          <div className="flex items-center gap-1.5">
             <label htmlFor={`leading-${family.slug}`} className="text-[12px] opacity-80 cursor-pointer">
               Leading
             </label>
@@ -340,8 +357,9 @@ export function FontshareCard({
               step={0.05}
               value={leading}
               onChange={(e) => setLeading(Number(e.target.value))}
-              className="range w-16 sm:w-20 cursor-pointer"
+              className="range w-14 sm:w-16 cursor-pointer"
             />
+            <span className="font-mono text-[11px] opacity-75 min-w-[28px] text-right">{leading.toFixed(2)}</span>
           </div>
         </div>
 
@@ -350,16 +368,16 @@ export function FontshareCard({
           <span>{family.styles.length} styles</span>
           {family.axes.length > 0 && <span>Variable</span>}
           <span className="hidden sm:inline opacity-70">
-            {family.license.name.includes("OFL") || family.license.name.includes("SIL")
-              ? "Open Source"
-              : family.license.name}
+            {family.license?.name
+              ? family.license.name.includes("OFL") || family.license.name.includes("SIL")
+                ? "Open Source"
+                : family.license.name
+              : "Free"}
           </span>
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
       {/* 2. BIG SPECIMEN TEXT (Directly Clickable & Editable in-place) */}
-      {/* ───────────────────────────────────────────────────────────── */}
       <div
         onClick={() => textareaRef.current?.focus()}
         className="cursor-text px-5 py-8 md:px-10 md:py-12"
@@ -367,15 +385,7 @@ export function FontshareCard({
         <label htmlFor={`specimen-input-${family.slug}`} className="sr-only">
           Chỉnh sửa chữ thử cho font {family.name}
         </label>
-        <div
-          className={`${
-            columns === "double"
-              ? "columns-1 md:columns-2 gap-8"
-              : columns === "triple"
-              ? "columns-1 md:columns-3 gap-6"
-              : ""
-          }`}
-        >
+        <div>
           <textarea
             id={`specimen-input-${family.slug}`}
             ref={textareaRef}
@@ -385,14 +395,16 @@ export function FontshareCard({
             placeholder={family.name}
             spellCheck={false}
             style={{
-              fontFamily: `'${family.slug}'`,
+              fontFamily: `'${family.slug}', ${fallbackGeneric}`,
               fontSize: `${size}px`,
               fontWeight: weight,
+              fontVariationSettings: weightAxis ? `'wght' ${weight}` : undefined,
               fontStyle: italic ? "italic" : "normal",
               lineHeight: leading,
               textAlign: align,
+              minHeight: `${Math.round(size * leading)}px`,
             }}
-            className={`w-full resize-none overflow-hidden border-0 bg-transparent p-0 outline-none transition-all placeholder:opacity-30 ${
+            className={`w-full resize-none overflow-hidden border-0 bg-transparent p-0 outline-none transition-colors break-words placeholder:opacity-30 ${
               isLight
                 ? "text-[#121212] caret-[#121212] selection:bg-[#121212] selection:text-[#fafaf8]"
                 : "text-panel-ink caret-panel-ink selection:bg-panel-ink selection:text-panel"
@@ -401,24 +413,33 @@ export function FontshareCard({
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 3. BOTTOM BAR (Designer info, Download & View Family)         */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 3. BOTTOM BAR (Designer info, Copy CSS, Download & View Family) */}
       <div
         className={`flex flex-wrap items-center justify-between gap-4 border-t px-5 py-4 text-[13px] md:px-10 ${
           isLight ? "border-[#e5e5e0] text-[#666]" : "border-line text-panel-muted"
         }`}
       >
         {/* Left: Designer */}
-        <span className="truncate">
+        <span className="truncate max-w-xs md:max-w-md">
           Designed by{" "}
           <span className={`underline underline-offset-4 ${isLight ? "text-[#121212]" : "text-panel-ink"}`}>
-            {family.foundry || family.designer}
+            {family.foundry || family.designer || "Không rõ"}
           </span>
         </span>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
+          {/* Quick Copy CSS */}
+          <button
+            type="button"
+            onClick={handleCopyCss}
+            className="inline-flex items-center gap-1 text-[13px] text-panel-muted hover:text-panel-ink cursor-pointer"
+            title="Sao chép CSS font-family"
+          >
+            {copiedCss ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+            <span>{copiedCss ? "Đã chép" : "Copy CSS"}</span>
+          </button>
+
           {/* Controls / Drawer Toggle button */}
           <button
             type="button"
@@ -439,21 +460,19 @@ export function FontshareCard({
           <a
             href={`/api/download/${family.slug}`}
             download
-            className={`hidden items-center gap-1.5 transition-colors sm:inline-flex cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               isLight ? "text-[#555] hover:text-[#121212]" : "text-panel-muted hover:text-panel-ink"
             }`}
             title={`Tải font .zip (${formatBytes(family.size)})`}
           >
             <DownloadIcon />
-            <span>Tải ({formatBytes(family.size)})</span>
+            <span className="hidden sm:inline">Tải ({formatBytes(family.size)})</span>
           </a>
 
           {/* View Family / Xem họ chữ */}
           <Link
             href={`/fonts/${family.slug}`}
-            className={`inline-flex items-center gap-1.5 font-bold transition-transform hover:translate-x-0.5 ${
-              isLight ? "text-[#121212]" : "text-cream"
-            }`}
+            className="inline-flex items-center gap-1.5 font-bold text-panel-ink transition-transform hover:translate-x-0.5 hover:underline"
           >
             <span>Xem họ chữ</span>
             <ArrowRightIcon />
@@ -461,9 +480,7 @@ export function FontshareCard({
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 4. EXTENDED CONTROL DRAWER (Fontshare Image 2 Bottom Area)    */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 4. EXTENDED CONTROL DRAWER */}
       {isDrawerOpen && (
         <div
           className={`border-t px-5 py-6 md:px-10 ${
@@ -474,9 +491,9 @@ export function FontshareCard({
         >
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
             {/* Section 1: Text Options */}
-            <div className="space-y-4 md:col-span-5">
+            <div className="space-y-4 md:col-span-6">
               <h4 className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#121212]" : "text-panel-ink"}`}>
-                Text
+                Tùy chọn hiển thị
               </h4>
 
               <div className="flex flex-wrap items-center gap-6">
@@ -526,32 +543,9 @@ export function FontshareCard({
                   </button>
                 </div>
 
-                {/* Columns: Single, Double, Triple */}
-                <div className="flex items-center gap-2 text-[13px]">
-                  <span className="opacity-70">Columns:</span>
-                  <div className="flex items-center gap-1">
-                    {(["single", "double", "triple"] as const).map((col) => (
-                      <button
-                        key={col}
-                        type="button"
-                        onClick={() => setColumns(col)}
-                        className={`capitalize px-2 py-0.5 rounded text-[12px] transition-colors cursor-pointer ${
-                          columns === col
-                            ? isLight
-                              ? "bg-[#121212] text-[#fff] font-bold"
-                              : "bg-panel-ink text-panel font-bold"
-                            : "opacity-60 hover:opacity-100"
-                        }`}
-                      >
-                        {col}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Color mode: White vs Black */}
                 <div className="flex items-center gap-2 text-[13px]">
-                  <span className="opacity-70">Color mode:</span>
+                  <span className="opacity-70">Thẻ màu:</span>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -562,18 +556,18 @@ export function FontshareCard({
                           : "opacity-60 hover:opacity-100"
                       }`}
                     >
-                      White
+                      Sáng
                     </button>
                     <button
                       type="button"
                       onClick={() => setColorMode("black")}
                       className={`px-2 py-0.5 rounded text-[12px] transition-colors cursor-pointer ${
                         colorMode === "black"
-                          ? "bg-[#ffffe3] text-[#10100e] font-bold"
+                          ? "bg-solid-bg text-solid-ink font-bold"
                           : "opacity-60 hover:opacity-100"
                       }`}
                     >
-                      Black
+                      Tối
                     </button>
                   </div>
                 </div>
@@ -589,7 +583,7 @@ export function FontshareCard({
                       isLight ? "text-[#121212]" : "text-panel-ink"
                     }`}
                   >
-                    {appliedNotice ? "✓ Đã áp dụng" : "Apply to All"}
+                    {appliedNotice ? "✓ Đã áp dụng" : "Áp dụng cho tất cả"}
                   </button>
                 )}
                 <button
@@ -597,66 +591,33 @@ export function FontshareCard({
                   onClick={handleReset}
                   className="chip text-[13px] opacity-70 hover:opacity-100 cursor-pointer"
                 >
-                  Reset
+                  Đặt lại
                 </button>
               </div>
             </div>
 
-            {/* Section 2: Features */}
-            <div className="space-y-4 md:col-span-4 md:border-l md:border-line/40 md:pl-6">
+            {/* Section 2: Quick Styles */}
+            <div className="space-y-4 md:col-span-6">
               <h4 className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#121212]" : "text-panel-ink"}`}>
-                Features
-              </h4>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Đủ dấu tiếng Việt</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Fractions</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Ligatures</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Tabular numerals</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Ordinals</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  <span>Stylistic sets</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Section 3: Styles Quick Select */}
-            <div className="space-y-4 md:col-span-3 md:border-l md:border-line/40 md:pl-6">
-              <h4 className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#121212]" : "text-panel-ink"}`}>
-                Styles & Weights
+                Kiểu chữ ({family.styles.length})
               </h4>
               <div className="flex flex-wrap gap-1.5">
-                {family.styles.map((st) => (
+                {family.styles.map((s) => (
                   <button
-                    key={st.key}
+                    key={s.key}
                     type="button"
-                    onClick={() => handleSelectStyle(st)}
-                    className={`rounded px-2 py-1 text-[12px] transition-colors cursor-pointer ${
-                      weight === st.weight && italic === st.italic
+                    onClick={() => handleSelectStyle(s)}
+                    className={`rounded px-2.5 py-1 text-[12px] transition-colors cursor-pointer ${
+                      weight === s.weight && italic === s.italic
                         ? isLight
-                          ? "bg-[#121212] text-[#fff] font-bold"
-                          : "bg-panel-ink text-panel font-bold"
+                          ? "bg-[#121212] text-white font-bold"
+                          : "bg-solid-bg text-solid-ink font-bold"
                         : isLight
-                        ? "bg-[#e5e5e0] hover:bg-[#dcdcd8]"
-                        : "bg-panel hover:bg-line"
+                        ? "bg-[#e5e5e0] text-[#333] hover:bg-[#d8d8d2]"
+                        : "bg-panel text-panel-ink hover:bg-line"
                     }`}
                   >
-                    {st.name}
+                    <span className={s.italic ? "italic" : ""}>{s.name}</span>
                   </button>
                 ))}
               </div>

@@ -158,45 +158,43 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
           <span className="font-bold">{family.name}</span>
           <span className="text-muted">{family.styles.length} styles</span>
           {family.axes.length > 0 && (
-            <span className="text-muted">Variable font (wght)</span>
+            <span className="text-muted">Variable font</span>
           )}
-          <span className="capitalize text-muted">
-            {family.categories.join(" · ")}
+          {family.vietnamese && (
+            <span className="text-muted">✓ Đủ dấu tiếng Việt</span>
+          )}
+          <span className="text-muted">
+            {family.categories.join(", ")}
           </span>
-          <span className="ml-auto hidden text-muted sm:inline">
-            {family.vietnamese
-              ? "✓ Đầy đủ 134 ký tự có dấu tiếng Việt"
-              : "Thiếu một số dấu tiếng Việt"}
+          <span className="text-muted">
+            {formatBytes(family.size)}
+          </span>
+          <span className="text-muted">
+            Giấy phép: {family.license.name}
           </span>
         </div>
 
-        {/* Hero Section */}
-        <div className="grid grid-cols-1 border-b border-line md:grid-cols-12">
-          {/* Huge Family Title */}
-          <div className="py-10 md:col-span-8 md:border-r md:border-line md:py-16 md:pr-10">
-            <h1
-              className="text-[clamp(56px,11vw,160px)] leading-[0.95] tracking-[-0.03em]"
-              style={{
-                fontFamily: `'${family.slug}'`,
-                fontWeight: previewStyle?.weight ?? 400,
-                fontStyle: previewStyle?.italic ? "italic" : "normal",
-              }}
-            >
-              {family.name}
-            </h1>
-          </div>
-
-          {/* Details & Description Column */}
-          <div className="flex flex-col justify-between gap-8 border-t border-line py-8 md:col-span-4 md:border-t-0 md:py-16 md:pl-8">
-            <p className="text-[15px] leading-[22px] text-muted md:text-[16px]">
+        {/* Big Hero Visual Banner */}
+        <div className="overflow-hidden border-b border-line py-16 md:py-24">
+          <p
+            className="text-[48px] leading-[1.08] tracking-tight sm:text-[72px] md:text-[100px] lg:text-[124px] break-words text-panel-ink"
+            style={{
+              fontFamily: `'${family.slug}', sans-serif`,
+              fontWeight: previewStyle?.weight ?? 400,
+              fontStyle: previewStyle?.italic ? "italic" : "normal",
+            }}
+          >
+            {family.name}
+          </p>
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-12">
+            <p className="max-w-2xl text-[16px] leading-[26px] text-muted md:col-span-8 md:text-[18px]">
               {family.description}
             </p>
-
-            <div className="space-y-2 border-t border-line/60 pt-6 text-[14px]">
+            <div className="space-y-2 border-line text-[14px] md:col-span-4 md:border-l md:pl-6">
               <div className="flex items-center justify-between text-muted">
                 <span>Giấy phép</span>
                 <Link
-                  href={`/licenses/${family.license.id}`}
+                  href="/licenses"
                   className="link-underline font-medium text-ink"
                 >
                   {family.license.name}
@@ -235,62 +233,76 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* TAB CONTENT VIEWS                                             */}
+      {/* TAB CONTENT VIEWS (Kept mounted to preserve user typed state)  */}
       {/* ───────────────────────────────────────────────────────────── */}
 
       {/* TAB 1: SPECIMEN */}
-      {(activeTab === "all" || activeTab === "specimen") && (
-        <div id="panel-specimen" role="tabpanel" aria-labelledby="tab-specimen">
-          <SpecimenTester
-            slug={family.slug}
-            name={family.name}
-            axes={family.axes}
-            styles={family.styles}
-            initialWeight={previewStyle?.weight ?? 400}
-          />
-        </div>
-      )}
+      <div
+        id="panel-specimen"
+        role="tabpanel"
+        aria-labelledby="tab-specimen"
+        className={activeTab === "all" || activeTab === "specimen" ? "block" : "hidden"}
+      >
+        <SpecimenTester
+          slug={family.slug}
+          name={family.name}
+          axes={family.axes}
+          styles={family.styles}
+          initialWeight={previewStyle?.weight ?? 400}
+        />
+      </div>
 
       {/* TAB 2: STYLES */}
-      {(activeTab === "all" || activeTab === "styles") && (
-        <div id="panel-styles" role="tabpanel" aria-labelledby="tab-styles">
-          <StylesGallery
-            slug={family.slug}
-            name={family.name}
-            styles={family.styles}
-          />
-        </div>
-      )}
+      <div
+        id="panel-styles"
+        role="tabpanel"
+        aria-labelledby="tab-styles"
+        className={activeTab === "all" || activeTab === "styles" ? "block" : "hidden"}
+      >
+        <StylesGallery
+          slug={family.slug}
+          name={family.name}
+          styles={family.styles}
+        />
+      </div>
 
       {/* TAB 3: FEATURES */}
-      {(activeTab === "all" || activeTab === "features") && (
-        <div id="panel-features" role="tabpanel" aria-labelledby="tab-features">
-          <FontFeaturesInspector slug={family.slug} name={family.name} />
-        </div>
-      )}
+      <div
+        id="panel-features"
+        role="tabpanel"
+        aria-labelledby="tab-features"
+        className={activeTab === "all" || activeTab === "features" ? "block" : "hidden"}
+      >
+        <FontFeaturesInspector slug={family.slug} name={family.name} />
+      </div>
 
       {/* TAB 4: GLYPHS */}
-      {(activeTab === "all" || activeTab === "glyphs") && (
-        <div id="panel-glyphs" role="tabpanel" aria-labelledby="tab-glyphs">
-          <GlyphInspector
-            slug={family.slug}
-            name={family.name}
-            glyphsCount={family.glyphs}
-            styles={family.styles}
-            metrics={family.metrics}
-          />
-        </div>
-      )}
+      <div
+        id="panel-glyphs"
+        role="tabpanel"
+        aria-labelledby="tab-glyphs"
+        className={activeTab === "all" || activeTab === "glyphs" ? "block" : "hidden"}
+      >
+        <GlyphInspector
+          slug={family.slug}
+          glyphsCount={family.glyphs}
+          styles={family.styles}
+          metrics={family.metrics}
+        />
+      </div>
 
       {/* TAB 5: PAIRINGS */}
-      {(activeTab === "all" || activeTab === "pairings") && (
-        <div id="panel-pairings" role="tabpanel" aria-labelledby="tab-pairings">
-          <FontPairsInspector
-            family={family}
-            allFamilies={allFamilies}
-          />
-        </div>
-      )}
+      <div
+        id="panel-pairings"
+        role="tabpanel"
+        aria-labelledby="tab-pairings"
+        className={activeTab === "all" || activeTab === "pairings" ? "block" : "hidden"}
+      >
+        <FontPairsInspector
+          family={family}
+          allFamilies={allFamilies}
+        />
+      </div>
 
       {/* EMBED & CODE INTEGRATION */}
       <EmbedCode family={family} />

@@ -1,21 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import type { FontAxis, FontStyle } from "@/lib/types";
 import { CheckIcon, CopyIcon } from "./icons";
 
+const AXIS_NAMES: Record<string, string> = {
+  wght: "Độ đậm",
+  wdth: "Độ rộng",
+  slnt: "Độ nghiêng",
+  ital: "Nghiêng (Italic)",
+  opsz: "Kích thước quang học",
+};
+
 const PRESET_TEXTS = [
   { label: "Tiêu đề", text: "Chữ Việt đẹp và tinh tế." },
+  {
+    label: "Pangram",
+    text: "Gió đưa cành trúc la đà, tiếng chuông Trấn Vũ canh gà Thọ Xương.",
+  },
   {
     label: "Đoạn văn",
     text: "Mỗi dấu thanh trong hệ chữ Quốc ngữ đòi hỏi sự cân nhắc tỉ mỉ về trọng lượng, độ nghiêng và khoảng cách không gian, giúp mắt người đọc lướt êm ái mà không bị gián đoạn.",
   },
   {
     label: "Đủ dấu",
-    text: "Ắ Ề Ỗ Ữ Ỹ Ỵ Đ ₫ ă â ê ô ơ ư ả ạ ẽ ị ỏ ũ — Tiếng chuông chùa ngân vang chiều tà.",
+    text: "Ắ Ề Ỗ Ữ Ỳ Ỵ Đ ₫ ă â ê ô ơ ư ả ạ ẽ ị ỏ ũ — Tiếng chuông chùa ngân vang chiều tà.",
   },
   {
-    label: "Bảng chữ cái",
+    label: "Chữ cái",
     text: "A B C D E F G H I K L M N O P Q R S T U V X Y Z · a b c d e f g h i k l m n o p q r s t u v x y z",
   },
   {
@@ -46,6 +58,7 @@ export function SpecimenTester({
   initialWeight,
 }: Props) {
   const weightAxis = axes.find((axis) => axis.tag === "wght");
+  const otherAxes = axes.filter((axis) => axis.tag !== "wght");
   const italicStyles = styles.filter((style) => style.italic);
 
   // View mode
@@ -63,6 +76,14 @@ export function SpecimenTester({
     if (!weightAxis) return initialWeight;
     return Math.min(Math.max(initialWeight, weightAxis.min), weightAxis.max);
   });
+  const [otherAxisValues, setOtherAxisValues] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const a of otherAxes) {
+      initial[a.tag] = a.default;
+    }
+    return initial;
+  });
+
   const [italic, setItalic] = useState(false);
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
   const [textTransform, setTextTransform] = useState<
@@ -70,6 +91,16 @@ export function SpecimenTester({
   >("none");
   const [invertCanvas, setInvertCanvas] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea height
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [text, size, lineHeight, letterSpacing, weight]);
 
   // Editorial content states (editable in-place)
   const [editorialHeadline, setEditorialHeadline] = useState(
@@ -84,6 +115,17 @@ export function SpecimenTester({
   const [editorialBody, setEditorialBody] = useState(
     "Mỗi dấu sắc, huyền, hỏi, ngã, nặng khi đặt trên các nguyên âm có nón như Â, Ă, Ê, Ô, Ơ, Ư là một bài toán hình học đầy thách thức. Người thiết kế phải cân nhắc tỉ mỉ từng micromet để dấu không bị chạm vào ký tự kế cận hoặc làm thủng nhịp điệu đen trắng trên từng dòng văn bản. Khi được chế tác chuẩn xác, một họ chữ đẹp sẽ làm nổi bật vẻ sang trọng và trang nhã của tiếng Việt."
   );
+
+  const fontVariationSettings = useMemo(() => {
+    const parts: string[] = [];
+    if (weightAxis) {
+      parts.push(`'wght' ${weight}`);
+    }
+    for (const [tag, val] of Object.entries(otherAxisValues)) {
+      parts.push(`'${tag}' ${val}`);
+    }
+    return parts.length > 0 ? parts.join(", ") : undefined;
+  }, [weightAxis, weight, otherAxisValues]);
 
   const css = useMemo(() => {
     const file = styles.find((style) => !style.italic)?.file ?? styles[0]?.file;
@@ -103,13 +145,14 @@ export function SpecimenTester({
       `.my-heading {`,
       `  font-family: '${name}', sans-serif;`,
       `  font-weight: ${weight};`,
+      fontVariationSettings ? `  font-variation-settings: ${fontVariationSettings};` : null,
       `  font-style: ${italic ? "italic" : "normal"};`,
       `  font-size: ${size}px;`,
       `  line-height: ${lineHeight};`,
       `  letter-spacing: ${letterSpacing}em;`,
       `}`,
-    ].join("\n");
-  }, [name, slug, styles, weight, weightAxis, italic, size, lineHeight, letterSpacing]);
+    ].filter(Boolean).join("\n");
+  }, [name, slug, styles, weight, weightAxis, italic, size, lineHeight, letterSpacing, fontVariationSettings]);
 
   async function copyCss() {
     try {
@@ -131,6 +174,11 @@ export function SpecimenTester({
         ? Math.min(Math.max(initialWeight, weightAxis.min), weightAxis.max)
         : initialWeight
     );
+    const initialOther: Record<string, number> = {};
+    for (const a of otherAxes) {
+      initialOther[a.tag] = a.default;
+    }
+    setOtherAxisValues(initialOther);
     setItalic(false);
     setAlign("left");
     setTextTransform("none");
@@ -202,12 +250,12 @@ export function SpecimenTester({
 
         {/* Global Controls Grid */}
         <div className="grid grid-cols-1 gap-6 py-6 md:grid-cols-4 md:gap-8 border-b border-line">
-          {/* Weight */}
+          {/* Weight & Other Axes */}
           <div>
             {weightAxis ? (
               <>
                 <div className="flex items-baseline justify-between text-[14px]">
-                  <span className="micro">Độ đậm (Variable)</span>
+                  <span className="micro">Độ đậm (wght)</span>
                   <span className="font-bold">{weight}</span>
                 </div>
                 <input
@@ -246,6 +294,34 @@ export function SpecimenTester({
               </>
             )}
 
+            {/* Other variable axes (wdth, slnt, etc.) */}
+            {otherAxes.map((axis) => {
+              const label = AXIS_NAMES[axis.tag] ?? axis.tag.toUpperCase();
+              return (
+                <div key={axis.tag} className="mt-4">
+                  <div className="flex items-baseline justify-between text-[14px]">
+                    <span className="micro">{label} ({axis.tag})</span>
+                    <span className="font-bold">{otherAxisValues[axis.tag] ?? axis.default}</span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label={`Trục ${label}`}
+                    min={axis.min}
+                    max={axis.max}
+                    step={1}
+                    value={otherAxisValues[axis.tag] ?? axis.default}
+                    onChange={(e) =>
+                      setOtherAxisValues((prev) => ({
+                        ...prev,
+                        [axis.tag]: Number(e.target.value),
+                      }))
+                    }
+                    className="range mt-3 cursor-pointer"
+                  />
+                </div>
+              );
+            })}
+
             {italicStyles.length > 0 && (
               <div className="mt-4">
                 <button
@@ -278,34 +354,33 @@ export function SpecimenTester({
               onChange={(e) => setSize(Number(e.target.value))}
               className="range mt-3 cursor-pointer"
             />
-            {mode === "playground" && (
-              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
-                {SIZE_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setSize(preset)}
-                    className="chip text-[12px] cursor-pointer"
-                    data-active={size === preset || undefined}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            )}
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {SIZE_PRESETS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSize(s)}
+                  className="chip px-2 py-0.5 font-mono text-[12px] cursor-pointer"
+                  data-active={size === s || undefined}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Line Height & Letter Spacing */}
+          {/* Line height & Spacing */}
           <div>
             <div className="flex items-baseline justify-between text-[14px]">
-              <span className="micro">Giãn dòng</span>
+              <span className="micro">Khoảng cách dòng</span>
               <span className="font-bold">{lineHeight.toFixed(2)}</span>
             </div>
             <input
               type="range"
-              aria-label="Giãn dòng"
+              aria-label="Khoảng cách dòng"
               min={0.8}
-              max={2.2}
+              max={2.5}
               step={0.05}
               value={lineHeight}
               onChange={(e) => setLineHeight(Number(e.target.value))}
@@ -314,13 +389,13 @@ export function SpecimenTester({
 
             <div className="mt-4 flex items-baseline justify-between text-[14px]">
               <span className="micro">Khoảng cách chữ</span>
-              <span className="font-bold">{letterSpacing.toFixed(2)}em</span>
+              <span className="font-bold">{letterSpacing}em</span>
             </div>
             <input
               type="range"
-              aria-label="Khoảng cách chữ"
+              aria-label="Khoảng cách ký tự"
               min={-0.05}
-              max={0.25}
+              max={0.3}
               step={0.01}
               value={letterSpacing}
               onChange={(e) => setLetterSpacing(Number(e.target.value))}
@@ -328,10 +403,10 @@ export function SpecimenTester({
             />
           </div>
 
-          {/* Alignment & Invert Canvas */}
+          {/* Alignment & Transform */}
           <div>
-            <span className="micro">Căn lề & Hiển thị</span>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="micro">Căn chỉnh & Hiển thị</span>
+            <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setAlign("left")}
@@ -430,13 +505,15 @@ export function SpecimenTester({
             </label>
             <textarea
               id="specimen-live-input"
-              rows={Math.max(2, Math.ceil(text.length / 45))}
+              ref={textareaRef}
+              rows={1}
               value={text}
               onChange={(e) => setText(e.target.value)}
               style={{
                 fontFamily: `'${slug}', sans-serif`,
                 fontSize: `${size}px`,
                 fontWeight: weight,
+                fontVariationSettings,
                 fontStyle: italic ? "italic" : "normal",
                 lineHeight,
                 letterSpacing: `${letterSpacing}em`,
@@ -444,7 +521,7 @@ export function SpecimenTester({
                 textTransform,
               }}
               placeholder="Bấm vào đây để gõ nội dung bất kỳ…"
-              className="w-full resize-none border-0 bg-transparent p-0 outline-none"
+              className="w-full resize-none border-0 bg-transparent p-0 outline-none break-words"
             />
             <p className="micro mt-6 text-center opacity-40">
               (Bấm trực tiếp vào đoạn văn trên để chỉnh sửa nội dung bất kỳ)
@@ -485,7 +562,7 @@ export function SpecimenTester({
                 className="group flex flex-col gap-2 py-5 transition-colors first:pt-2 last:pb-2 md:flex-row md:items-baseline md:gap-8"
               >
                 {/* Size Badge */}
-                <div className="w-16 shrink-0 font-mono text-[13px] font-bold text-muted group-hover:text-cream">
+                <div className="w-16 shrink-0 font-mono text-[13px] font-bold text-muted group-hover:text-ink">
                   {fontSize}px
                 </div>
 
@@ -496,6 +573,7 @@ export function SpecimenTester({
                     fontFamily: `'${slug}', sans-serif`,
                     fontSize: `${fontSize}px`,
                     fontWeight: weight,
+                    fontVariationSettings,
                     fontStyle: italic ? "italic" : "normal",
                     lineHeight: 1.2,
                     letterSpacing: `${letterSpacing}em`,
@@ -537,12 +615,13 @@ export function SpecimenTester({
               style={{
                 fontFamily: `'${slug}', sans-serif`,
                 fontWeight: Math.max(weight, 600),
+                fontVariationSettings,
                 fontStyle: italic ? "italic" : "normal",
                 lineHeight: 1.08,
                 letterSpacing: `${letterSpacing}em`,
                 textAlign: align,
               }}
-              className="w-full resize-none border-0 bg-transparent p-0 text-[38px] tracking-tight outline-none md:text-[56px] lg:text-[68px]"
+              className="w-full resize-none border-0 bg-transparent p-0 text-[38px] tracking-tight outline-none md:text-[56px] lg:text-[68px] break-words"
             />
 
             {/* Editable Subhead / Deck */}
@@ -555,76 +634,54 @@ export function SpecimenTester({
                 style={{
                   fontFamily: `'${slug}', sans-serif`,
                   fontWeight: Math.min(weight, 500),
+                  fontVariationSettings,
                   fontStyle: italic ? "italic" : "normal",
                   lineHeight: 1.35,
-                  letterSpacing: `${letterSpacing}em`,
                   textAlign: align,
                 }}
-                className="w-full resize-none border-0 bg-transparent p-0 text-[18px] text-muted outline-none md:text-[22px]"
+                className="w-full resize-none border-0 bg-transparent p-0 text-[20px] text-muted outline-none md:text-[24px] break-words"
               />
             </div>
 
-            {/* Two-Column Editorial Article Body */}
-            <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 text-[16px] leading-[1.65]">
-              {/* Column 1 */}
+            {/* Editable Article Body in 2 Columns */}
+            <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
               <div>
-                <p className="micro mb-2 font-mono text-[11px] uppercase">
-                  Phần I: Khởi nguồn & Cấu trúc
-                </p>
                 <textarea
-                  rows={6}
-                  aria-label="Nội dung phần I bài báo mẫu"
+                  rows={8}
+                  aria-label="Đoạn mở đầu bài báo"
                   value={editorialLead}
                   onChange={(e) => setEditorialLead(e.target.value)}
                   style={{
                     fontFamily: `'${slug}', sans-serif`,
                     fontWeight: weight,
+                    fontVariationSettings,
                     fontStyle: italic ? "italic" : "normal",
-                    lineHeight,
+                    lineHeight: 1.6,
                     letterSpacing: `${letterSpacing}em`,
                     textAlign: align,
                   }}
-                  className="w-full resize-none border-0 bg-transparent p-0 text-[16px] leading-relaxed outline-none"
+                  className="w-full resize-none border-0 bg-transparent p-0 text-[16px] font-medium leading-relaxed outline-none md:text-[17px] break-words"
                 />
               </div>
 
-              {/* Column 2 */}
               <div>
-                <p className="micro mb-2 font-mono text-[11px] uppercase">
-                  Phần II: Dấu thanh & Nhịp điệu
-                </p>
                 <textarea
-                  rows={6}
-                  aria-label="Nội dung phần II bài báo mẫu"
+                  rows={8}
+                  aria-label="Nội dung thân bài bài báo"
                   value={editorialBody}
                   onChange={(e) => setEditorialBody(e.target.value)}
                   style={{
                     fontFamily: `'${slug}', sans-serif`,
-                    fontWeight: weight,
+                    fontWeight: Math.min(weight, 400),
+                    fontVariationSettings,
                     fontStyle: italic ? "italic" : "normal",
-                    lineHeight,
+                    lineHeight: 1.65,
                     letterSpacing: `${letterSpacing}em`,
                     textAlign: align,
                   }}
-                  className="w-full resize-none border-0 bg-transparent p-0 text-[16px] leading-relaxed outline-none"
+                  className="w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-relaxed text-muted outline-none md:text-[16px] break-words"
                 />
               </div>
-            </div>
-
-            {/* Pull Quote Box */}
-            <div className="mt-12 border-l-2 border-cream pl-6 py-2">
-              <p
-                className="text-[20px] italic leading-snug text-cream md:text-[24px]"
-                style={{
-                  fontFamily: `'${slug}', sans-serif`,
-                  fontWeight: Math.max(weight, 500),
-                }}
-              >
-                “Kiểu chữ không đơn thuần là công cụ biểu đạt ngôn từ — nó chính là âm hưởng thị giác truyền tải cảm xúc của toàn bộ tác phẩm.”
-              </p>
-              <p className="micro mt-3 font-mono text-[12px]">
-                Trích dẫn từ bài luận Typography Việt Nam đương đại
-              </p>
             </div>
           </div>
         </div>
