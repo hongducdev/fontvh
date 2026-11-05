@@ -8,6 +8,7 @@ import { SpecimenTester } from "./specimen-tester";
 import { StylesGallery } from "./styles-gallery";
 import { FontFeaturesInspector } from "./font-features-inspector";
 import { GlyphInspector } from "./glyph-inspector";
+import { DiacriticsInspector } from "./diacritics-inspector";
 import { FontPairsInspector } from "./font-pairs-inspector";
 import { EmbedCode } from "./embed-code";
 
@@ -16,7 +17,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-type TabKey = "all" | "specimen" | "styles" | "features" | "glyphs" | "pairings";
+type TabKey = "all" | "specimen" | "styles" | "features" | "glyphs" | "diacritics" | "pairings";
 
 type Props = {
   family: FontFamily;
@@ -35,7 +36,7 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
     const syncHash = () => {
       const hash = window.location.hash.replace("#", "") as TabKey;
       if (
-        ["specimen", "styles", "features", "glyphs", "pairings", "all"].includes(
+        ["specimen", "styles", "features", "glyphs", "diacritics", "pairings", "all"].includes(
           hash
         )
       ) {
@@ -61,6 +62,7 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
     { id: "styles" as const, label: `Kiểu chữ (${family.styles.length})`, shortLabel: `Kiểu (${family.styles.length})` },
     { id: "features" as const, label: "Tính năng (Features)", shortLabel: "Tính năng" },
     { id: "glyphs" as const, label: `Ký tự (${family.glyphs})`, shortLabel: `Ký tự (${family.glyphs})` },
+    { id: "diacritics" as const, label: "Soi dấu (Diacritics)", shortLabel: "Soi dấu" },
     { id: "pairings" as const, label: "Cặp font (Pairs)", shortLabel: "Cặp font" },
   ];
 
@@ -291,7 +293,22 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
         />
       </div>
 
-      {/* TAB 5: PAIRINGS */}
+      {/* TAB 5: DIACRITICS */}
+      <div
+        id="panel-diacritics"
+        role="tabpanel"
+        aria-labelledby="tab-diacritics"
+        className={activeTab === "all" || activeTab === "diacritics" ? "block" : "hidden"}
+      >
+        <DiacriticsInspector
+          slug={family.slug}
+          name={family.name}
+          styles={family.styles}
+          metrics={family.metrics}
+        />
+      </div>
+
+      {/* TAB 6: PAIRINGS */}
       <div
         id="panel-pairings"
         role="tabpanel"
