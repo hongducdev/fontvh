@@ -1,0 +1,8 @@
+node_modules/
+.next/
+out/
+data/catalog.json
+app/font-faces.css
+public/fonts/
+*.tsbuildinfo
+.env*.local
