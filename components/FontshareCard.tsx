@@ -233,15 +233,19 @@ export function FontshareCard({
             <button
               type="button"
               onClick={() => setIsStyleDropdownOpen((prev) => !prev)}
-              className={`flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1 text-[13px] font-medium transition-colors cursor-pointer ${
                 isLight
-                  ? "bg-[#eee] text-[#121212] hover:bg-[#e4e4e4]"
+                  ? "bg-[#e8e8e4] text-[#121212] hover:bg-[#deded8]"
                   : "bg-soft text-panel-ink hover:bg-line"
               }`}
               title="Chọn kiểu chữ"
             >
               <span>{selectedStyleName}</span>
-              <ChevronDownIcon className="opacity-70" />
+              <ChevronDownIcon
+                className={`opacity-70 transition-transform duration-150 ${
+                  isStyleDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {isStyleDropdownOpen && (
@@ -425,7 +429,7 @@ export function FontshareCard({
           >
             <span>Tùy chỉnh</span>
             <ChevronDownIcon
-              className={`h-3 w-3 transition-transform duration-200 ${
+              className={`transition-transform duration-200 ${
                 isDrawerOpen ? "rotate-180" : ""
               }`}
             />
