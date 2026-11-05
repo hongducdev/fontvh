@@ -6,123 +6,146 @@ import { CheckIcon, CopyIcon } from "./icons";
 interface FeatureConfig {
   id: string;
   tag: string;
-  cssProperty: string;
-  inactiveCssProperty: string;
   name: string;
   description: string;
-  defaultText: string;
+  cssProperty: string;
+  inactiveCssProperty: string;
   defaultActive: boolean;
-  category: "ligatures" | "alternates" | "numerics" | "punctuation" | "localized";
+  defaultText: string;
 }
 
 const OPENTYPE_FEATURES: FeatureConfig[] = [
   {
     id: "liga",
-    tag: "liga, dlig",
-    cssProperty: '"liga" 1, "dlig" 1',
-    inactiveCssProperty: '"liga" 0, "dlig" 0, "clig" 0',
-    name: "Ligatures (Chữ ghép / Nối nét)",
+    tag: "liga",
+    name: "Standard Ligatures (Chữ ghép tiêu chuẩn)",
     description:
-      "Tự động kết hợp các cặp ký tự liền kề có nét chạm nhau (như fi, fl, ff, ffi, ffl, Th, st) thành một glyph liền mạch tinh tế.",
+      "Tự động kết hợp các cặp ký tự liền kề như fi, fl, ffi, ff, tt để loại bỏ các điểm va chạm hình học giữa nét cong của 'f' và dấu chấm của 'i'.",
+    cssProperty: '"liga" 1',
+    inactiveCssProperty: '"liga" 0, "clig" 0',
+    defaultActive: true,
     defaultText: "Office first flight affiliate difficult shuffle craft Staff five",
-    defaultActive: true,
-    category: "ligatures",
   },
   {
-    id: "ss01",
-    tag: "ss01, salt",
-    cssProperty: '"ss01" 1, "salt" 1',
-    inactiveCssProperty: '"ss01" 0, "salt" 0',
-    name: "Stylistic Alternates (Kiểu dáng thay thế)",
+    id: "dlig",
+    tag: "dlig",
+    name: "Discretionary Ligatures (Chữ ghép mỹ thuật)",
     description:
-      "Cung cấp các biến thể chữ cái hình học hoặc tối giản (như chữ 'a' một tầng, chữ 'g' mở, nét cong chữ 't' hoặc 'Q' thanh lịch).",
-    defaultText: "Digital Agency & Creative Studio Quality Design (a, g, y, Q, t)",
-    defaultActive: true,
-    category: "alternates",
-  },
-  {
-    id: "frac",
-    tag: "frac",
-    cssProperty: '"frac" 1',
-    inactiveCssProperty: '"frac" 0',
-    name: "Fractions (Phân số chuẩn)",
-    description:
-      "Tự động chuyển các số ngăn cách bởi dấu gạch chéo thành phân số typography chuẩn xác với tử số và mẫu số thu nhỏ cân xứng.",
-    defaultText: "1/2 tách trà, 3/4 muỗng mật ong, 5/8 ounce vani, 7/16 milimet",
-    defaultActive: true,
-    category: "numerics",
+      "Các liên kết chữ mang tính trang trí cao hơn như st, ct, sp, ch, mang lại phong cách cổ điển thanh lịch cho tiêu đề ấn phẩm.",
+    cssProperty: '"dlig" 1',
+    inactiveCssProperty: '"dlig" 0',
+    defaultActive: false,
+    defaultText: "Star structure special contact aesthetic abstract posture",
   },
   {
     id: "tnum",
     tag: "tnum",
+    name: "Tabular Figures (Chữ số đồng rộng)",
+    description:
+      "Các chữ số có cùng một bề rộng (monospaced), giúp các cột số liệu, bảng giá, báo cáo tài chính thẳng hàng một cách hoàn hảo theo chiều dọc.",
     cssProperty: '"tnum" 1',
     inactiveCssProperty: '"tnum" 0, "pnum" 1',
-    name: "Tabular Figures (Chữ số thẳng cột)",
+    defaultActive: false,
+    defaultText: "11,111.00 ₫\n88,888.00 ₫\n19,203.50 ₫\n94,765.25 ₫",
+  },
+  {
+    id: "pnum",
+    tag: "pnum",
+    name: "Proportional Figures (Chữ số tỷ lệ)",
     description:
-      "Đặt tất cả chữ số có chiều rộng bằng nhau (monospaced) để các con số căn thẳng hàng chuẩn xác trong bảng biểu tài chính.",
-    defaultText: "2024: 1,840,500 ₫ (+12.4%)\n2025: 2,930,120 ₫ (+59.2%)\n2026: 7,105,890 ₫ (+142.5%)",
+      "Chữ số có bề rộng tỷ lệ tự nhiên với hình dáng con chữ (số 1 hẹp hơn số 8), tối ưu nhịp điệu khi đọc trong các đoạn văn bản dài.",
+    cssProperty: '"pnum" 1',
+    inactiveCssProperty: '"pnum" 0, "tnum" 1',
     defaultActive: true,
-    category: "numerics",
+    defaultText: "Năm 1995, có 1.250 dự án trị giá 8.840 tỷ đồng được cấp phép.",
   },
   {
     id: "onum",
     tag: "onum",
+    name: "Oldstyle Figures (Chữ số cổ điển / Nhảy dòng)",
+    description:
+      "Chữ số có các nét nhô lên (ascender) và thụt xuống (descender) hài hòa tự nhiên với chiều cao x-height của chữ cái thường.",
     cssProperty: '"onum" 1',
     inactiveCssProperty: '"onum" 0, "lnum" 1',
-    name: "Oldstyle Figures (Chữ số cổ điển)",
-    description:
-      "Chữ số có các nét nhô lên và hạ xuống (ascenders/descenders) hòa hợp tự nhiên vào dòng văn bản thường như chữ cái.",
-    defaultText: "Năm 1887 đến 1945: Tổng cộng 3,456 tài liệu và 789 cuốn sách cổ",
-    defaultActive: true,
-    category: "numerics",
+    defaultActive: false,
+    defaultText: "Xuất bản lần thứ 3 vào năm 1789, tái bản năm 1845 và 1923.",
   },
   {
-    id: "cpsp",
-    tag: "cpsp",
-    cssProperty: '"cpsp" 1',
-    inactiveCssProperty: '"cpsp" 0',
-    name: "Capital Spacing (Khoảng cách chữ hoa)",
+    id: "lnum",
+    tag: "lnum",
+    name: "Lining Figures (Chữ số chiều cao chữ hoa)",
     description:
-      "Tự động tăng nhẹ khoảng cách tracking giữa các ký tự khi xuất hiện một chuỗi toàn chữ HOA (ALL-CAPS) để văn bản thoáng mắt.",
-    defaultText: "HÀ NỘI · SÀI GÒN · ĐÀ NẴNG · TYPOGRAPHY VIETNAM 2026",
+      "Chữ số có cùng chiều cao với chữ in hoa, đứng đều trên baseline, phù hợp khi đặt cùng các từ in hoa hoặc làm tiêu đề.",
+    cssProperty: '"lnum" 1',
+    inactiveCssProperty: '"lnum" 0',
     defaultActive: true,
-    category: "punctuation",
+    defaultText: "ISO 9001:2015 · MÃ ĐƠN HÀNG #89201 · PHÒNG 402B",
   },
   {
-    id: "case",
-    tag: "case",
-    cssProperty: '"case" 1',
-    inactiveCssProperty: '"case" 0',
-    name: "Case-Sensitive Forms (Dấu câu theo chữ hoa)",
+    id: "frac",
+    tag: "frac",
+    name: "Fractions (Phân số tự động)",
     description:
-      "Nâng cao vị trí các dấu câu như ngoặc đơn ( ), gạch ngang —, dấu hai chấm : để ngang hàng với chiều cao chữ hoa (Cap Height).",
-    defaultText: "(CHỮ HOA VỚI DẤU NGOẶC) [VÀ DẤU NGOẶC VUÔNG] — ĐỒNG VIỆT NAM: ₫",
-    defaultActive: true,
-    category: "punctuation",
+      "Tự động chuyển các cụm số và dấu gạch chéo thành phân số chuẩn typo thanh mảnh với tử số và mẫu số thu nhỏ.",
+    cssProperty: '"frac" 1',
+    inactiveCssProperty: '"frac" 0',
+    defaultActive: false,
+    defaultText: "1/2 1/4 3/4 1/8 3/8 5/8 7/8 2/3 1/3",
+  },
+  {
+    id: "ordn",
+    tag: "ordn",
+    name: "Ordinals (Số thứ tự thu nhỏ)",
+    description:
+      "Thu nhỏ các ký tự hậu tố chỉ số thứ tự (như 1st, 2nd, 3rd, 1er, 1o, 1a) lên góc trên bên phải.",
+    cssProperty: '"ordn" 1',
+    inactiveCssProperty: '"ordn" 0',
+    defaultActive: false,
+    defaultText: "1st place · 2nd edition · 3rd volume · No 1º premio · 1er",
+  },
+  {
+    id: "smcp",
+    tag: "smcp",
+    name: "Small Capitals (Chữ hoa nhỏ / Small Caps)",
+    description:
+      "Chuyển đổi chữ cái thường thành chữ in hoa có chiều cao bằng x-height, được thiết kế đồng bộ về độ dày và nét vẽ thay vì co nhỏ chữ hoa thông thường.",
+    cssProperty: '"smcp" 1',
+    inactiveCssProperty: '"smcp" 0',
+    defaultActive: false,
+    defaultText: "Chữ Hoa Nhỏ Tạo Sự Tinh Tế Cho Các Đoạn Trích Dẫn Và Tiêu Đề Phụ.",
+  },
+  {
+    id: "c2sc",
+    tag: "c2sc",
+    name: "Capitals to Small Caps (Hoa sang Hoa nhỏ)",
+    description:
+      "Chuyển đổi toàn bộ chữ cái in hoa chuẩn thành chữ hoa nhỏ (Small Caps), tạo sự đồng nhất tuyệt đối cho toàn bộ câu.",
+    cssProperty: '"c2sc" 1',
+    inactiveCssProperty: '"c2sc" 0',
+    defaultActive: false,
+    defaultText: "VIỆT NAM QUỐC NGỮ NGHỆ THUẬT TYPOGRAPHY HIỆN ĐẠI",
   },
   {
     id: "zero",
     tag: "zero",
-    cssProperty: '"zero" 1',
-    inactiveCssProperty: '"zero" 0',
     name: "Slashed Zero (Số 0 có gạch chéo)",
     description:
-      "Thêm nét gạch chéo hoặc chấm ở giữa số 0 để phân biệt tuyệt đối rõ ràng với chữ O in hoa trong mã code hoặc số liệu kỹ thuật.",
-    defaultText: "Mã số: 0O80-VN-2026 · IP: 192.168.0.100 · Port: 8080 · 000 ₫",
-    defaultActive: true,
-    category: "numerics",
+      "Thêm nét gạch chéo bên trong số 0 để phân biệt tuyệt đối với chữ cái O hoa, rất quan trọng trong code, tài chính và lập trình.",
+    cssProperty: '"zero" 1',
+    inactiveCssProperty: '"zero" 0',
+    defaultActive: false,
+    defaultText: "Mã 0O0 · Port 8080 · IP 192.168.0.1 · Số tài khoản: 00710009280",
   },
   {
-    id: "locl",
-    tag: "locl",
-    cssProperty: '"locl" 1',
-    inactiveCssProperty: '"locl" 0',
-    name: "Localized Forms (Ký tự địa phương hóa)",
+    id: "case",
+    tag: "case",
+    name: "Case-Sensitive Forms (Dấu câu theo chữ hoa)",
     description:
-      "Sử dụng các biến thể glyph đặc thù được tối ưu hóa cho từng ngôn ngữ cụ thể theo quy chuẩn ngôn ngữ ISO.",
-    defaultText: "Ký hiệu chuẩn tiền tệ: ₫ (Việt Nam Đồng) · Dấu kép tiếng Việt",
-    defaultActive: true,
-    category: "localized",
+      "Tự động nâng các dấu câu như ngoặc đơn (), ngoặc vuông [], gạch ngang — và dấu hai chấm : lên giữa chiều cao chữ hoa khi câu toàn chữ in hoa.",
+    cssProperty: '"case" 1',
+    inactiveCssProperty: '"case" 0',
+    defaultActive: false,
+    defaultText: "[THÔNG BÁO] (HÀ NỘI — SÀI GÒN) {2026}: PHIÊN BẢN MỚI",
   },
 ];
 
@@ -132,7 +155,7 @@ interface Props {
 }
 
 export function FontFeaturesInspector({ slug, name }: Props) {
-  // Trạng thái bật/tắt từng feature
+  // State for toggle switch per feature
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const f of OPENTYPE_FEATURES) {
@@ -183,9 +206,9 @@ export function FontFeaturesInspector({ slug, name }: Props) {
   };
 
   return (
-    <section id="features" className="shell mt-16 scroll-mt-20">
-      {/* Header */}
-      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line pb-4">
+    <section id="features" className="shell py-12 scroll-mt-20">
+      {/* Section Header */}
+      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line pb-6">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-[18px] font-bold md:text-[20px]">
@@ -345,14 +368,26 @@ export function FontFeaturesInspector({ slug, name }: Props) {
                 </div>
               </div>
 
-              {/* Editable Sample Text Box */}
-              <div className="mt-4 flex items-start gap-3 border-t border-line/40 pt-3">
-                <label
-                  htmlFor={`input-${feature.id}`}
-                  className="micro shrink-0 text-[12px] pt-1"
-                >
-                  Thử chữ riêng:
-                </label>
+              {/* Editable Sample Text Box (Stacked vertically) */}
+              <div className="mt-5 flex flex-col gap-2 border-t border-line/40 pt-4">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor={`input-${feature.id}`}
+                    className="micro text-[12px] font-medium text-panel-muted"
+                  >
+                    Thử chữ riêng:
+                  </label>
+                  {currentText !== feature.defaultText && (
+                    <button
+                      type="button"
+                      onClick={() => updateText(feature.id, feature.defaultText)}
+                      className="text-[12px] text-muted hover:text-ink cursor-pointer"
+                    >
+                      Khôi phục câu mẫu mặc định
+                    </button>
+                  )}
+                </div>
+
                 {isMultiline ? (
                   <textarea
                     id={`input-${feature.id}`}
@@ -360,7 +395,7 @@ export function FontFeaturesInspector({ slug, name }: Props) {
                     aria-label={`Thử chữ riêng cho tính năng ${feature.name}`}
                     value={currentText}
                     onChange={(e) => updateText(feature.id, e.target.value)}
-                    className="w-full resize-y bg-transparent text-[14px] text-panel-ink outline-none placeholder:text-muted/60"
+                    className="w-full resize-y rounded border border-line/60 bg-paper/40 px-3.5 py-2 text-[14px] text-panel-ink outline-none transition-colors focus:border-ink placeholder:text-muted/60"
                   />
                 ) : (
                   <input
@@ -370,7 +405,7 @@ export function FontFeaturesInspector({ slug, name }: Props) {
                     value={currentText}
                     onChange={(e) => updateText(feature.id, e.target.value)}
                     placeholder="Gõ văn bản để kiểm tra..."
-                    className="w-full bg-transparent text-[14px] text-panel-ink outline-none placeholder:text-muted/60"
+                    className="w-full rounded border border-line/60 bg-paper/40 px-3.5 py-2 text-[14px] text-panel-ink outline-none transition-colors focus:border-ink placeholder:text-muted/60"
                   />
                 )}
               </div>

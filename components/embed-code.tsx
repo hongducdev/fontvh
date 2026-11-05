@@ -329,29 +329,34 @@ export function EmbedCode({ family }: Props) {
       </div>
 
       {/* Code window with line numbers and syntax highlighting */}
-      <div className="code-window mt-6">
+      <div className="mt-6 overflow-hidden rounded-lg border border-code-border bg-code-bg font-mono shadow-sm">
         {/* Title bar */}
-        <div className="code-titlebar">
-          <div className="code-dots">
-            <span className="code-dot bg-[#ff5f56]" />
-            <span className="code-dot bg-[#ffbd2e]" />
-            <span className="code-dot bg-[#27c93f]" />
+        <div className="flex h-10 items-center justify-between border-b border-code-border bg-code-header px-4 text-[12px] select-none">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
+            <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
+            <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
           </div>
-          <span className="code-filename">{fileInfo.name}</span>
-          <span className="code-lang">{fileInfo.lang}</span>
+          <span className="text-[13px] font-medium text-muted">{fileInfo.name}</span>
+          <span className="rounded bg-soft px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+            {fileInfo.lang}
+          </span>
         </div>
 
         {/* Code body */}
-        <pre className="code-body">
-          <code>
+        <pre className="m-0 overflow-x-auto p-4 text-[13px] leading-[22px] font-mono scrollbar-thin">
+          <code className="block">
             {lines.map((line, i) => {
               const tokens = tokenizeLine(line, tab);
               return (
-                <div key={i} className="code-line">
-                  <span className="code-lineno" aria-hidden="true">
+                <div key={i} className="flex items-start hover:bg-white/[0.02]">
+                  <span
+                    className="w-10 shrink-0 select-none pr-4 text-right font-mono text-[12px] text-code-line-num"
+                    aria-hidden="true"
+                  >
                     {i + 1}
                   </span>
-                  <span className="code-text">
+                  <span className="flex-1 whitespace-pre">
                     {tokens.map((token, j) => (
                       <span key={j} className={TOKEN_CLASS[token.type]}>
                         {token.text}
