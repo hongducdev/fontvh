@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { FontFamily } from "@/lib/types";
@@ -53,7 +53,6 @@ type Props = {
 
 export function FontDetailTabs({ family, allFamilies }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
-  const [isPending, startTransition] = useTransition();
 
   const previewStyle =
     family.styles.find((style) => !style.italic && style.weight === 400) ??
@@ -77,9 +76,7 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
   }, []);
 
   const handleSelectTab = (tab: TabKey) => {
-    startTransition(() => {
-      setActiveTab(tab);
-    });
+    setActiveTab(tab);
     window.history.replaceState(null, "", `#${tab}`);
     if (tab === "all") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -113,7 +110,7 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
           <div
             role="tablist"
             aria-label="Điều hướng các phân mục chi tiết font chữ"
-            className="hidden items-center justify-center gap-1 overflow-x-auto text-[14px] md:col-span-7 md:flex md:h-full"
+            className="hidden items-stretch justify-center gap-1 overflow-x-auto no-scrollbar text-[14px] md:col-span-7 md:flex md:h-full"
           >
             {tabsConfig.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -127,11 +124,17 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
                   tabIndex={isActive ? 0 : -1}
                   type="button"
                   onClick={() => handleSelectTab(tab.id)}
-                  className={`chip px-3 py-1.5 cursor-pointer transition-all duration-200 active:scale-95 focus-visible:ring-1 focus-visible:ring-ink ${
-                    isActive ? "text-ink font-bold border-b-2 border-ink" : "text-muted hover:text-ink"
+                  className={`relative h-full flex items-center px-3 cursor-pointer text-[13px] md:text-[14px] font-medium transition-colors select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink ${
+                    isActive ? "text-ink font-bold" : "text-muted hover:text-ink"
                   }`}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink"
+                      aria-hidden="true"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -154,7 +157,7 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
         <div
           role="tablist"
           aria-label="Điều hướng phân mục trên di động"
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar mask-fade-right border-t border-line/60 px-4 py-2 md:hidden"
+          className="flex items-stretch gap-1 overflow-x-auto no-scrollbar mask-fade-right border-t border-line/60 px-4 h-11 md:hidden"
         >
           {tabsConfig.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -168,21 +171,20 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
                 tabIndex={isActive ? 0 : -1}
                 type="button"
                 onClick={() => handleSelectTab(tab.id)}
-                className={`chip shrink-0 min-h-[38px] px-2.5 py-1 text-[13px] transition-all duration-200 active:scale-95 ${
-                  isActive ? "text-ink font-bold border-b-2 border-ink" : "text-muted"
+                className={`relative shrink-0 h-full inline-flex items-center px-2.5 text-[13px] font-medium transition-colors select-none ${
+                  isActive ? "text-ink font-bold" : "text-muted"
                 }`}
               >
-                {tab.shortLabel}
+                <span>{tab.shortLabel}</span>
+                {isActive && (
+                  <span
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
             );
           })}
-        </div>
-
-        {/* Subtle indicator bar for transition pending state */}
-        <div className="relative h-[2px] w-full overflow-hidden bg-transparent">
-          {isPending && (
-            <div className="absolute inset-y-0 left-0 w-1/3 bg-ink/80 animate-[indeterminate-shimmer_1.2s_infinite_ease-in-out] rounded-full" />
-          )}
         </div>
       </div>
 
@@ -267,12 +269,8 @@ export function FontDetailTabs({ family, allFamilies }: Props) {
         </div>
       </div>
 
-      {/* TAB CONTENT VIEWS (Kept mounted with smooth transition opacity) */}
-      <div
-        className={`transition-opacity duration-200 ease-out ${
-          isPending ? "opacity-60" : "opacity-100"
-        }`}
-      >
+      {/* TAB CONTENT VIEWS */}
+      <div>
         {/* TAB 1: SPECIMEN */}
         <div
           id="panel-specimen"
